@@ -1,0 +1,16 @@
+{
+  "name": "securityx-readiness-tests",
+  "version": "1.0.0",
+  "description": "Test harness for securityx-readiness.html — syntax, CSS, content integrity, browser interaction, reload persistence",
+  "main": "run-all.js",
+  "scripts": {
+    "test": "node run-all.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "css-tree": "^3.2.1",
+    "jsdom": "^30.0.1"
+  }
+}
