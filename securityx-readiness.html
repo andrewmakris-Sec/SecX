@@ -493,11 +493,32 @@
   .heat i:hover{transform:scale(1.18);}
   .heat i.on{background:var(--ok);border-color:var(--ok);box-shadow:0 0 8px rgba(74,222,128,.35);}
 
+  /* ---------- home ---------- */
+  .home-hero h2{font-size:var(--f7);font-weight:600;letter-spacing:-.02em;margin:var(--sp2) 0 0;}
+  .nav-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:var(--sp3);}
+  .nav-card{
+    display:block;width:100%;text-align:left;border:1px solid var(--line);border-radius:var(--r2);
+    padding:var(--sp4);cursor:pointer;font-family:var(--sans);color:var(--fg);
+    background:linear-gradient(165deg,rgba(255,255,255,.05),rgba(255,255,255,0) 45%),var(--glass);
+    backdrop-filter:var(--blur);-webkit-backdrop-filter:var(--blur);
+    box-shadow:var(--e1);transition:transform var(--base) var(--ease),border-color var(--base) var(--ease),
+      box-shadow var(--base) var(--ease);
+  }
+  .nav-card:hover{transform:translateY(-2px);border-color:var(--ac-line);box-shadow:var(--e2);}
+  .nav-card .ic{display:inline-block;font-family:var(--mono);font-size:var(--f0);font-weight:700;
+    letter-spacing:.1em;color:var(--ac);line-height:1;padding:3px 7px;border-radius:5px;
+    border:1px solid var(--ac-line);background:var(--ac-dim);}
+  .nav-card .n{font-size:var(--f5);font-weight:600;margin:var(--sp3) 0 3px;}
+  .nav-card .d{font-size:var(--f2);color:var(--fg3);line-height:1.5;}
+  .nav-card .v{display:inline-block;margin-top:var(--sp2);font-family:var(--mono);font-size:var(--f0);
+    letter-spacing:.08em;text-transform:uppercase;color:var(--ac);}
+
   /* ---------- responsive ---------- */
   @media(max-width:860px){
     .course{grid-template-columns:1fr;}
     .rail{position:static;max-height:none;}
     .cols{column-count:1;}
+    .nav-grid{grid-template-columns:repeat(2,1fr);}
   }
   @media(max-width:580px){
     :root{--f5:14.5px;--f7:20px;--f8:40px;}
@@ -508,6 +529,7 @@
     .box{padding:var(--sp4);}
     nav{gap:0;}
     .tab{padding:11px 11px;font-size:var(--f1);}
+    .nav-grid{grid-template-columns:1fr;}
   }
   @media(prefers-reduced-motion:reduce){
     *,*::before,*::after{animation:none !important;transition:none !important;}
@@ -535,14 +557,14 @@
   <header class="hud">
     <div>
       <div class="lbl">Mechanical Orchard · InfoSec</div>
-      <div class="brand">SECX<em>//</em>READINESS</div>
+      <div class="brand" id="brandHome" style="cursor:pointer" title="Go to Home" tabindex="0" role="button">SECX<em>//</em>READINESS</div>
       <div class="hudmeta"><span id="hCd"></span><span id="hSt"></span><span id="hDue"></span></div>
     </div>
     <div class="rings">
       <div class="bars" id="bars"></div>
       <div class="ring">
         <svg width="78" height="78" viewBox="0 0 78 78">
-          <circle cx="39" cy="39" r="33" fill="none" stroke="var(--raised)" stroke-width="6"/>
+          <circle cx="39" cy="39" r="33" fill="none" stroke="var(--line3)" stroke-width="6"/>
           <circle id="arc" cx="39" cy="39" r="33" fill="none" stroke="var(--ac)" stroke-width="6"
             stroke-linecap="round" stroke-dasharray="207.3" stroke-dashoffset="207.3"
             style="transition:stroke-dashoffset 900ms cubic-bezier(.2,.8,.2,1),stroke 420ms ease"/>
@@ -553,18 +575,33 @@
   </header>
 
   <nav id="nav">
-    <button class="tab on" data-t="course">Course</button>
-    <button class="tab" data-t="flash">Cards<span class="b" id="bDue" hidden></span></button>
-    <button class="tab" data-t="notes">Notes</button>
-    <button class="tab" data-t="drill">Drill<span class="b" id="bMiss" hidden></span></button>
-    <button class="tab" data-t="exam">Exam Sim</button>
-    <button class="tab" data-t="cram">Cram</button>
-    <button class="tab" data-t="search">Search</button>
-    <button class="tab" data-t="track">Pluralsight</button>
-    <button class="tab" data-t="plan">Plan</button>
+    <button class="tab on" data-t="home" title="Overview and quick links">Home</button>
+    <button class="tab" data-t="course" title="121 lessons across 4 domains">Course</button>
+    <button class="tab" data-t="flash" title="Spaced-repetition flashcards">Cards<span class="b" id="bDue" hidden></span></button>
+    <button class="tab" data-t="notes" title="Per-domain topic and trap reference">Notes</button>
+    <button class="tab" data-t="drill" title="Practice questions, filtered your way">Drill<span class="b" id="bMiss" hidden></span></button>
+    <button class="tab" data-t="exam" title="Full-length timed exam simulation">Exam Sim</button>
+    <button class="tab" data-t="cram" title="One-page final review sheet">Cram</button>
+    <button class="tab" data-t="search" title="Search every lesson, card, note and question">Search</button>
+    <button class="tab" data-t="track" title="Pluralsight courses and labs tracker">Pluralsight</button>
+    <button class="tab" data-t="plan" title="Readiness score and study plan">Plan</button>
   </nav>
 
-  <section class="panel on" id="p-course">
+  <section class="panel on" id="p-home">
+    <div class="box home-hero">
+      <div class="lbl" id="hmGreet">Welcome</div>
+      <h2 id="hmHeadline">Let's get started.</h2>
+      <p class="hint" id="hmSub" style="margin:var(--sp2) 0 var(--sp4)"></p>
+      <div class="row">
+        <button class="btn pri" id="hmContinue">Continue studying →</button>
+        <button class="btn gd" id="hmExam">Start an exam sim</button>
+      </div>
+    </div>
+    <div class="stats" id="hmStats" style="margin:var(--sp4) 0"></div>
+    <div class="nav-grid" id="hmGrid"></div>
+  </section>
+
+  <section class="panel" id="p-course">
     <div class="course"><aside class="rail" id="rail"></aside><div class="box" id="lesson"></div></div>
   </section>
 
@@ -8718,12 +8755,16 @@ document.querySelectorAll('.tab').forEach(t=>{
     const tab=t.dataset.t;
     if(tab==='course'){const L=curLesson();if(L)setAccent(D(L.dom).color,D(L.dom).rgb);}
     else setAccent(DEFAULT_AC.hex,DEFAULT_AC.rgb);
+    if(tab==='home')renderHome();
     if(tab==='plan')renderPlan();
     if(tab==='exam')renderEHist();
     if(tab==='cram')renderCram();
     if(tab==='search')document.getElementById('sIn').focus();
   });
 });
+const goTab=t=>{const b=document.querySelector('.tab[data-t="'+t+'"]');if(b)b.click();};
+document.getElementById('brandHome').onclick=()=>goTab('home');
+document.getElementById('brandHome').onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();goTab('home');}};
 
 /* ===================== COURSE ===================== */
 const FLAT=[];
@@ -9557,6 +9598,48 @@ const eDate=document.getElementById('eDate');
 eDate.onchange=async()=>{examDate=eDate.value||null;await sSet(K.date,examDate);updateHud();renderPlan();};
 document.getElementById('bClrDate').onclick=async()=>{examDate=null;eDate.value='';
   await sSet(K.date,null);updateHud();renderPlan();};
+/* ===================== HOME ===================== */
+const NAV_CARDS=[
+  {t:'course',ic:'CRS',n:'Course',d:'121 lessons across GRC, ARCH, ENG and OPS, artifact-first with inline checks.',
+    v:()=>FLAT.length?(FLAT.filter(l=>lessonDone[l.id]).length+' / '+FLAT.length+' done'):''},
+  {t:'flash',ic:'CRD',n:'Cards',d:'Spaced-repetition flashcards across every domain plus an acronym deck.',
+    v:()=>dueCount()+' due'},
+  {t:'notes',ic:'NTS',n:'Notes',d:'Per-domain topic lists and the traps that show up on the real exam.',v:()=>''},
+  {t:'drill',ic:'DRL',n:'Drill',d:'Practice questions filtered by type, deck, or adaptive weak-area targeting.',
+    v:()=>QUESTIONS.filter(q=>qState[q.id]&&(qState[q.id].missed||qState[q.id].guessed)).length+' to review'},
+  {t:'exam',ic:'EXM',n:'Exam Sim',d:'Timed, domain-weighted simulation matching real CAS-005 pacing and mix.',
+    v:()=>examHistory.length?examHistory.length+' attempt(s)':'no attempts yet'},
+  {t:'cram',ic:'CRM',n:'Cram',d:'One-page formulas, sequences, discriminators and traps for the final pass.',v:()=>''},
+  {t:'search',ic:'SRC',n:'Search',d:'Full-text search across every lesson, card, note and question.',v:()=>''},
+  {t:'track',ic:'PSL',n:'Pluralsight',d:'Track the paired video courses and hands-on labs alongside this tool.',
+    v:()=>psDone()+' / '+psAll().length+' tracked'},
+  {t:'plan',ic:'PLN',n:'Plan',d:'Readiness score, domain breakdown and a study pace against your exam date.',
+    v:()=>Math.round(readiness()*100)+'% ready'},
+];
+function renderHome(){
+  const started=FLAT.some(l=>lessonDone[l.id])||Object.keys(fcState).length>0;
+  document.getElementById('hmGreet').textContent=started?'Welcome back':'Welcome';
+  const L=curLesson();
+  document.getElementById('hmHeadline').textContent=L?('Continue: '+L.t):'You\'re all caught up on lessons.';
+  const pct=Math.round(readiness()*100),dc=dueCount();
+  document.getElementById('hmSub').textContent=
+    pct+'% ready overall'+(dc?' · '+dc+' card(s) due today':'')+(streak()?' · '+streak()+'-day streak':'');
+  document.getElementById('hmStats').innerHTML=
+    '<div class="st"><b>'+FLAT.filter(l=>lessonDone[l.id]).length+' / '+FLAT.length+'</b><span>lessons done</span></div>'
+    +'<div class="st"><b>'+dc+'</b><span>cards due</span></div>'
+    +'<div class="st"><b>'+pct+'%</b><span>readiness</span></div>'
+    +'<div class="st"><b style="color:var(--ok)">'+streak()+'</b><span>day streak</span></div>';
+  document.getElementById('hmGrid').innerHTML=NAV_CARDS.map(c=>
+    '<button class="nav-card" data-go="'+c.t+'"><div class="ic">'+c.ic+'</div><div class="n">'+c.n+'</div>'
+    +'<div class="d">'+c.d+'</div>'+(c.v()?'<div class="v">'+c.v()+'</div>':'')+'</button>'
+  ).join('');
+  document.getElementById('hmGrid').querySelectorAll('.nav-card').forEach(el=>{
+    el.onclick=()=>goTab(el.dataset.go);
+  });
+}
+document.getElementById('hmContinue').onclick=()=>goTab('course');
+document.getElementById('hmExam').onclick=()=>goTab('exam');
+
 function renderPlan(){
   eDate.value=examDate||'';
   const cardsLeft=FLASHCARDS.filter(c=>boxOf(c.id)<5).length;
@@ -9753,7 +9836,7 @@ document.getElementById('bReset').onclick=async()=>{
   const firstUndone=FLAT.find(l=>!lessonDone[l.id]);
   if(firstUndone)curId=firstUndone.id;
   renderCourse();buildFc();renderNotes();buildDrill();renderPs();
-  eIdle();renderEHist();renderCram();renderPlan();updateHud();
+  eIdle();renderEHist();renderCram();renderPlan();updateHud();renderHome();
 })();
 </script>
 </body>

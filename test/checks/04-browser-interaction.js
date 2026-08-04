@@ -13,7 +13,7 @@ async function run(seed) {
   const { data, fns } = exp;
 
   // --- click through every tab ---
-  const tabIds = ['course', 'flash', 'notes', 'drill', 'exam', 'cram', 'search', 'track', 'plan'];
+  const tabIds = ['home', 'course', 'flash', 'notes', 'drill', 'exam', 'cram', 'search', 'track', 'plan'];
   for (const t of tabIds) {
     const btn = document.querySelector(`.tab[data-t="${t}"]`);
     assert(btn, `tab button for "${t}" not found`);
@@ -21,6 +21,13 @@ async function run(seed) {
     const panel = document.getElementById('p-' + t);
     assert(panel && panel.classList.contains('on'), `panel p-${t} did not activate on click`);
   }
+
+  // --- home nav-card click routes to the right tab ---
+  document.querySelector('.tab[data-t="home"]').click();
+  const flashCard = document.querySelector('#hmGrid .nav-card[data-go="flash"]');
+  assert(flashCard, 'home grid has no nav-card for the flash tab');
+  flashCard.click();
+  assert(document.getElementById('p-flash').classList.contains('on'), 'clicking the Cards nav-card on Home did not switch to the Cards tab');
 
   // --- domain accent recoloring ---
   document.querySelector('.tab[data-t="flash"]').click();
