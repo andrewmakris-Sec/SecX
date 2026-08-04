@@ -185,8 +185,10 @@
     font-family:var(--mono);font-size:8px;color:var(--fg3);text-decoration:none;letter-spacing:.06em;}
 
   /* ---------- nav ---------- */
-  nav{display:flex;gap:2px;margin:var(--sp5) 0 var(--sp4);flex-wrap:wrap;
+  nav{display:flex;gap:2px;align-items:center;margin:var(--sp5) 0 var(--sp4);flex-wrap:wrap;
     border-bottom:1px solid var(--line);}
+  .qsearch{margin-left:auto;min-width:0 !important;width:180px !important;padding:7px 10px !important;
+    font-size:var(--f2) !important;}
   .tab{
     font-family:var(--mono);font-size:var(--f2);letter-spacing:.08em;text-transform:uppercase;
     padding:12px 15px;color:var(--fg3);cursor:pointer;user-select:none;position:relative;
@@ -513,6 +515,16 @@
   .nav-card .v{display:inline-block;margin-top:var(--sp2);font-family:var(--mono);font-size:var(--f0);
     letter-spacing:.08em;text-transform:uppercase;color:var(--ac);}
 
+  /* ---------- confirm modal ---------- */
+  .modal-backdrop{position:fixed;inset:0;background:rgba(3,7,16,.62);z-index:80;
+    display:flex;align-items:center;justify-content:center;padding:var(--sp4);
+    animation:enter var(--fast) var(--ease);}
+  .modal-box{max-width:420px;width:100%;border:1px solid var(--line2);border-radius:var(--r2);
+    padding:var(--sp5);background:var(--glass-hi);backdrop-filter:var(--blur);-webkit-backdrop-filter:var(--blur);
+    box-shadow:var(--e3);}
+  .modal-box p{margin:0 0 var(--sp4);font-size:var(--f4);line-height:1.6;color:var(--fg2);}
+  .modal-box .row{justify-content:flex-end;}
+
   /* ---------- responsive ---------- */
   @media(max-width:860px){
     .course{grid-template-columns:1fr;}
@@ -585,6 +597,7 @@
     <button class="tab" data-t="search" title="Search every lesson, card, note and question">Search</button>
     <button class="tab" data-t="track" title="Pluralsight courses and labs tracker">Pluralsight</button>
     <button class="tab" data-t="plan" title="Readiness score and study plan">Plan</button>
+    <input type="text" id="qSearch" class="qsearch" placeholder="Quick search… (Enter)" autocomplete="off">
   </nav>
 
   <section class="panel on" id="p-home">
@@ -598,6 +611,7 @@
       </div>
     </div>
     <div class="stats" id="hmStats" style="margin:var(--sp4) 0"></div>
+    <button class="box" id="hmFocus" style="display:block;width:100%;text-align:left;cursor:pointer;margin-bottom:var(--sp4)"></button>
     <div class="nav-grid" id="hmGrid"></div>
   </section>
 
@@ -8854,10 +8868,12 @@ function renderLesson(){
   const hd=document.createElement('div'); hd.className='lhd';
   hd.innerHTML='<div style="flex:1;min-width:220px">'
     +'<div class="row" style="gap:7px;margin-bottom:8px">'
-    +'<span class="chip" style="border:1px solid '+d.color+';color:'+d.color+'"><i style="background:'+d.color+'"></i>'+d.short+'</span>'
+    +'<button class="chip" id="lhdChip" style="border:1px solid '+d.color+';color:'+d.color+';cursor:pointer" '
+    +'title="Back to '+esc(d.name)+' overview"><i style="background:'+d.color+'"></i>'+d.short+'</button>'
     +'<span class="tag">'+esc(L.mod)+'</span>'
     +'<span class="tag">'+(idx+1)+' / '+FLAT.length+'</span></div>'
     +'<h2>'+esc(L.t)+'</h2></div>';
+  hd.querySelector('#lhdChip').onclick=()=>{curDomView=L.dom;curId=null;renderCourse();};
   const nav=document.createElement('div'); nav.className='lnav';
   const prev=document.createElement('button'); prev.className='btn sm gd'; prev.textContent='← Prev';
   if(idx===0)prev.disabled=true; else prev.onclick=()=>{curId=FLAT[idx-1].id;renderCourse();};
@@ -9007,6 +9023,31 @@ document.addEventListener('keydown',e=>{
   if(e.key==='1')grade(false);
   if(e.key==='2')grade(true);
 });
+document.addEventListener('keydown',e=>{
+  const onDrill=document.getElementById('p-drill').classList.contains('on');
+  const onExam=document.getElementById('p-exam').classList.contains('on');
+  if(!onDrill&&!onExam)return;
+  if(['INPUT','SELECT','TEXTAREA'].includes(e.target.tagName))return;
+  const host=document.getElementById(onDrill?'dBox':'eQ');
+  if(!host)return;
+  if(/^[1-9]$/.test(e.key)){
+    const opt=host.querySelectorAll('.opt')[Number(e.key)-1];
+    if(opt&&!opt.disabled){e.preventDefault();opt.click();}
+    return;
+  }
+  if(e.key==='Enter'){
+    const btn=onDrill?document.getElementById('dSub')||document.getElementById('dNext')
+      :document.getElementById('eNext');
+    if(btn&&!btn.disabled){e.preventDefault();btn.click();}
+    return;
+  }
+  if(onExam&&e.key==='ArrowLeft'){
+    const b=document.getElementById('ePrev');if(b&&!b.disabled){e.preventDefault();b.click();}
+  }
+  if(onExam&&e.key==='ArrowRight'){
+    const b=document.getElementById('eNext');if(b&&!b.disabled){e.preventDefault();b.click();}
+  }
+});
 
 /* ===================== NOTES ===================== */
 function renderNotes(){
@@ -9030,7 +9071,39 @@ function renderNotes(){
   });
 }
 
+/* In-app replacement for window.confirm — native dialogs block the whole
+   page and can't be styled; this returns a Promise<boolean> instead. */
+function askConfirm(msg,opts){
+  opts=opts||{};
+  return new Promise(resolve=>{
+    const bg=document.createElement('div');bg.className='modal-backdrop';
+    const box=document.createElement('div');box.className='modal-box';
+    const p=document.createElement('p');p.textContent=msg;box.appendChild(p);
+    const row=document.createElement('div');row.className='row';
+    const cancel=document.createElement('button');cancel.className='btn gd sm';cancel.textContent=opts.cancelLabel||'Cancel';
+    const ok=document.createElement('button');ok.className='btn sm '+(opts.danger?'no':'pri');ok.textContent=opts.okLabel||'Confirm';
+    function onKey(e){if(e.key==='Escape')close(false);}
+    function close(v){bg.remove();document.removeEventListener('keydown',onKey);resolve(v);}
+    cancel.onclick=()=>close(false);
+    ok.onclick=()=>close(true);
+    bg.onclick=e=>{if(e.target===bg)close(false);};
+    document.addEventListener('keydown',onKey);
+    row.appendChild(cancel);row.appendChild(ok);box.appendChild(row);
+    bg.appendChild(box);document.body.appendChild(bg);
+    ok.focus();
+  });
+}
+
 /* ===================== QUESTION RENDERER ===================== */
+/* order/match/defect build plain divs (not buttons) so their existing CSS
+   applies unchanged; this makes each one focusable and Enter/Space-activatable
+   without touching layout, reusing whatever .onclick was already assigned. */
+function keyActivatable(el){
+  el.tabIndex=0;el.setAttribute('role','button');
+  el.addEventListener('keydown',e=>{
+    if(e.key==='Enter'||e.key===' '){e.preventDefault();el.click();}
+  });
+}
 function renderQ(host,q,st){
   host.innerHTML='';
   const d=D(q.d);
@@ -9100,7 +9173,7 @@ function rOrder(host,q,st){
       m.textContent=it===pos?'✓':'should be #'+(it+1);
       s.appendChild(m);
     }
-    if(!st.locked)s.onclick=()=>st.onAnswer(cur.filter((_,i)=>i!==pos));
+    if(!st.locked){s.onclick=()=>st.onAnswer(cur.filter((_,i)=>i!==pos));keyActivatable(s);}
     strip.appendChild(s);
   });
   host.appendChild(strip);
@@ -9110,7 +9183,7 @@ function rOrder(host,q,st){
     if(!rem.length){const e=document.createElement('div');e.className='onone';e.textContent='All items placed.';pool.appendChild(e);}
     rem.forEach(i=>{
       const it=document.createElement('div');it.className='oitem';it.textContent=q.items[i];
-      it.onclick=()=>st.onAnswer([...cur,i]);pool.appendChild(it);
+      it.onclick=()=>st.onAnswer([...cur,i]);keyActivatable(it);pool.appendChild(it);
     });
     host.appendChild(pool);
   }
@@ -9146,7 +9219,7 @@ function rDefect(host,q,st){
       else if(picked)mk='<span class="dm" style="color:var(--no)">\u2717 not a defect</span>';
     }else if(picked)mk='<span class="dm" style="color:var(--ac)">flagged</span>';
     row.innerHTML='<span class="g">'+(i+1)+'</span><span class="c">'+(ln.c||' ')+'</span>'+mk;
-    if(!st.locked)row.onclick=()=>st.onAnswer(picked?cur.filter(x=>x!==i):[...cur,i]);
+    if(!st.locked){row.onclick=()=>st.onAnswer(picked?cur.filter(x=>x!==i):[...cur,i]);keyActivatable(row);}
     ab.appendChild(row);
   });
   art.appendChild(ab);host.appendChild(art);
@@ -9168,10 +9241,10 @@ function rMatch(host,q,st){
     if(st.matchSel===li)el.classList.add('sel');
     if(st.reveal)el.classList.add(cur[li]===li?'yes':'no');
     el.innerHTML=(bound?'<span class="tn">'+(sh.indexOf(cur[li])+1)+'</span>':'')+esc(pr[0]);
-    if(!st.locked)el.onclick=()=>{
+    if(!st.locked){el.onclick=()=>{
       if(bound){const x={...cur};delete x[li];st.onAnswer(x,null);}
       else st.onAnswer(cur,li);
-    };
+    };keyActivatable(el);}
     L.appendChild(el);
   });
   sh.forEach((ri,pos)=>{
@@ -9180,12 +9253,12 @@ function rMatch(host,q,st){
     if(takenBy!==undefined)el.classList.add('tk');
     if(st.reveal&&takenBy!==undefined)el.classList.add(Number(takenBy)===ri?'yes':'no');
     el.innerHTML='<span class="tn">'+(pos+1)+'</span>'+esc(q.pairs[ri][1]);
-    if(!st.locked)el.onclick=()=>{
+    if(!st.locked){el.onclick=()=>{
       if(st.matchSel===null||st.matchSel===undefined)return;
       const x={...cur};
       Object.keys(x).forEach(k=>{if(x[k]===ri)delete x[k];});
       x[st.matchSel]=ri;st.onAnswer(x,null);
-    };
+    };keyActivatable(el);}
     R.appendChild(el);
   });
   grid.appendChild(L);grid.appendChild(R);host.appendChild(grid);
@@ -9234,7 +9307,7 @@ function paintDrill(){
     onAnswer:(a,s)=>{dA=a;if(s!==undefined)dSel=s;paintDrill();}});
   const bar=document.createElement('div');bar.className='row';bar.style.marginTop='15px';
   if(!dLock){
-    const sub=document.createElement('button');sub.className='btn pri';sub.textContent='Submit';
+    const sub=document.createElement('button');sub.className='btn pri';sub.id='dSub';sub.textContent='Submit';
     if(!isAnswered(q,dA))sub.disabled=true;
     else sub.onclick=async()=>{
       dLock=true;
@@ -9258,7 +9331,7 @@ function paintDrill(){
         await sSet(K.q,qState);updateHud();paintDrill();};
       bar.appendChild(g);
     }
-    const nx=document.createElement('button');nx.className='btn pri';
+    const nx=document.createElement('button');nx.className='btn pri';nx.id='dNext';
     nx.textContent=dQ.length===1?'Retry':(dI===dQ.length-1?'Restart set':'Next question');
     nx.onclick=()=>{dI=(dI+1)%dQ.length;loadDrill();};
     bar.appendChild(nx);
@@ -9374,9 +9447,9 @@ function ePaint(){
   document.getElementById('eNext').onclick=()=>{if(ex.i<ex.qs.length-1){ex.i++;ePaint();}};
   document.getElementById('eFlag').onclick=()=>{ex.flag[ex.i]=!ex.flag[ex.i];ePaint();};
   document.getElementById('eClear').onclick=()=>{ex.ans[ex.i]=blankAns(q);ex.sel[ex.i]=null;ePaint();};
-  document.getElementById('eSub').onclick=()=>{
+  document.getElementById('eSub').onclick=async()=>{
     const un=ex.qs.filter((qq,i)=>!isAnswered(qq,ex.ans[i])).length;
-    if(un&&!confirm(un+' question(s) incomplete. Submit anyway?'))return;
+    if(un&&!await askConfirm(un+' question(s) incomplete. Submit anyway?',{okLabel:'Submit anyway'}))return;
     eSubmit();
   };
   const g=document.getElementById('eGrid');
@@ -9548,6 +9621,12 @@ function doSearch(){
     m.textContent='Showing first 70 of '+res.length+'.';sBox.appendChild(m);}
 }
 sIn.oninput=doSearch;
+document.getElementById('qSearch').addEventListener('keydown',e=>{
+  if(e.key!=='Enter')return;
+  const v=e.target.value;
+  sIn.value=v;e.target.value='';
+  goTab('search');doSearch();
+});
 
 /* ===================== PLURALSIGHT ===================== */
 function psRow(it){
@@ -9672,6 +9751,14 @@ function renderHome(){
     +'<div class="st"><b>'+dc+'</b><span>cards due</span></div>'
     +'<div class="st"><b>'+pct+'%</b><span>readiness</span></div>'
     +'<div class="st"><b style="color:var(--ok)">'+streak()+'</b><span>day streak</span></div>';
+  const weakest=DOMAINS.slice().sort((a,b)=>domainScore(a.id)-domainScore(b.id))[0];
+  const wp=Math.round(domainScore(weakest.id)*100);
+  const focus=document.getElementById('hmFocus');
+  focus.innerHTML='<div class="lbl" style="color:'+weakest.color+'">Focus area</div>'
+    +'<div class="row" style="align-items:baseline;gap:'+'var(--sp3)'+';margin-top:6px">'
+    +'<span style="font-size:var(--f7);font-weight:700;color:'+weakest.color+'">'+weakest.short+'</span>'
+    +'<span class="hint">'+esc(weakest.name)+' is your lowest-scoring domain at '+wp+'% — the highest-leverage place to study next.</span></div>';
+  focus.onclick=()=>{curDomView=weakest.id;curId=null;renderCourse();goTab('course');};
   document.getElementById('hmGrid').innerHTML=NAV_CARDS.map(c=>
     '<button class="nav-card" data-go="'+c.t+'"><div class="ic">'+c.ic+'</div><div class="n">'+c.n+'</div>'
     +'<div class="d">'+c.d+'</div>'+(c.v()?'<div class="v">'+c.v()+'</div>':'')+'</button>'
@@ -9865,7 +9952,8 @@ document.getElementById('bExport').onclick=()=>{
   a.download='securityx-progress.json';a.click();URL.revokeObjectURL(a.href);
 };
 document.getElementById('bReset').onclick=async()=>{
-  if(!confirm('Clear course progress, cards, question history, exam attempts, Pluralsight tracking, streak and exam date?'))return;
+  if(!await askConfirm('Clear course progress, cards, question history, exam attempts, Pluralsight tracking, streak and exam date?',
+    {okLabel:'Clear everything',danger:true}))return;
   fcState={};qState={};examHistory=[];psProgress={};examDate=null;studyDays=[];lessonDone={};
   await sSet(K.fc,fcState);await sSet(K.q,qState);await sSet(K.exam,examHistory);
   await sSet(K.course,psProgress);await sSet(K.date,null);await sSet(K.days,studyDays);
