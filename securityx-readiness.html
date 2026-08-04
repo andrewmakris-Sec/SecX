@@ -4,6 +4,11 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>SECX READINESS</title>
+<meta name="description" content="A self-contained study tool for the CompTIA SecurityX (CAS-005) exam: 121 lessons, 559 flashcards, 452 practice questions, and a full-length exam simulator. Runs entirely offline.">
+<meta name="robots" content="noindex, nofollow">
+<meta property="og:title" content="SecX // Readiness">
+<meta property="og:description" content="Offline CompTIA SecurityX (CAS-005) exam prep — lessons, flashcards, question drills, and exam simulation in one file.">
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%230A1730'/%3E%3Ctext x='32' y='44' font-family='ui-monospace,Menlo,monospace' font-weight='700' font-size='30' fill='%23E4B33F' text-anchor='middle'%3ES%3C/text%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -16,16 +21,21 @@
      domain being studied.
      ============================================================ */
   :root{
-    /* surfaces, deepest to raised */
-    --ink:#070A11; --s1:#0C111B; --s2:#121926; --s3:#18202F;
-    /* hairlines */
-    --line:rgba(255,255,255,.07); --line2:rgba(255,255,255,.11); --line3:rgba(255,255,255,.18);
+    /* surfaces, deepest to raised — navy, not neutral gray */
+    --ink:#060B16; --s1:#0A1428; --s2:#0F1D3A; --s3:#16294D;
+    /* glass — translucent navy panels + the blur recipe applied to them */
+    --glass:rgba(14,27,52,.52); --glass-hi:rgba(19,35,64,.68);
+    --blur:blur(22px) saturate(150%);
+    /* hairlines — brightened slightly so edges still read through blur */
+    --line:rgba(255,255,255,.08); --line2:rgba(255,255,255,.14); --line3:rgba(255,255,255,.22);
     /* text */
-    --fg:#E9EEF7; --fg2:#9BAAC4; --fg3:#64748E; --fg4:#3D4B66;
+    --fg:#F4F7FB; --fg2:#B9C4DC; --fg3:#8CA0BE; --fg4:#4C5B7C;
     /* semantic */
-    --ok:#4ADE80; --no:#FB7185; --warn:#FBBF24;
-    /* domain accent — set by setAccent() */
-    --ac:#7DD3FC; --ac-dim:rgba(125,211,252,.13); --ac-line:rgba(125,211,252,.34);
+    --ok:#4ADE80; --no:#FB7185; --warn:#FB923C;
+    /* brand secondary — gold, spread through buttons/marks/badges */
+    --gold:#E4B33F; --gold-dim:rgba(228,179,63,.15); --gold-line:rgba(228,179,63,.4);
+    /* domain accent — set by setAccent(), defaults to gold */
+    --ac:#E4B33F; --ac-dim:rgba(228,179,63,.14); --ac-line:rgba(228,179,63,.38);
     /* motion */
     --fast:110ms; --base:200ms; --slow:400ms;
     --ease:cubic-bezier(.4,0,.2,1);
@@ -52,12 +62,14 @@
     font-size:var(--f5);line-height:1.55;letter-spacing:-.003em;
     -webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;
   }
-  /* ambient wash + micro-texture; recolors with the active domain */
+  /* ambient wash: layered navy + gold blooms behind the glass panels;
+     the middle bloom recolors with the active domain via --ac-dim */
   body::before{
     content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
     background:
-      radial-gradient(1200px 560px at 50% -12%, var(--ac-dim), transparent 68%),
-      radial-gradient(700px 400px at 100% 100%, rgba(255,255,255,.014), transparent 70%);
+      radial-gradient(1100px 620px at 12% -10%, rgba(44,84,166,.30), transparent 62%),
+      radial-gradient(900px 560px at 100% 8%, var(--ac-dim), transparent 60%),
+      radial-gradient(1000px 700px at 50% 118%, rgba(228,179,63,.07), transparent 65%);
     transition:background var(--slow) var(--ease);
   }
   .wrap{max-width:1120px;margin:0 auto;padding:var(--sp5) var(--sp4) var(--sp7);position:relative;z-index:1;}
@@ -81,8 +93,8 @@
 
   .box{
     border:1px solid var(--line);border-radius:var(--r2);padding:var(--sp5);
-    background:linear-gradient(180deg,var(--s2),var(--s1));
-    box-shadow:var(--e2);
+    background:var(--glass);backdrop-filter:var(--blur);-webkit-backdrop-filter:var(--blur);
+    box-shadow:var(--e2),inset 0 1px 0 rgba(255,255,255,.05);
   }
   h3.sect{
     font-family:var(--mono);font-size:var(--f1);text-transform:uppercase;letter-spacing:.15em;
@@ -103,7 +115,8 @@
 
   select,input[type=date],input[type=text]{
     font-family:var(--mono);font-size:var(--f3);color:var(--fg);
-    background:var(--s3);border:1px solid var(--line2);border-radius:var(--r1);
+    background:var(--glass-hi);backdrop-filter:var(--blur);-webkit-backdrop-filter:var(--blur);
+    border:1px solid var(--line2);border-radius:var(--r1);
     padding:9px 12px;transition:border-color var(--base) var(--ease),box-shadow var(--base) var(--ease);
   }
   input[type=text]{min-width:240px;}
@@ -113,16 +126,17 @@
   .btn{
     font-family:var(--mono);font-size:var(--f2);letter-spacing:.07em;text-transform:uppercase;
     padding:11px 17px;border-radius:var(--r1);border:1px solid var(--line2);
-    background:linear-gradient(180deg,var(--s3),var(--s2));color:var(--fg);
+    background:linear-gradient(180deg,rgba(255,255,255,.05),rgba(255,255,255,0)),var(--glass-hi);
+    color:var(--fg);
     cursor:pointer;text-align:center;user-select:none;font-weight:500;
     transition:transform var(--fast) var(--ease),border-color var(--base) var(--ease),
       box-shadow var(--base) var(--ease),color var(--base) var(--ease),background var(--base) var(--ease);
   }
   .btn:hover{border-color:var(--ac);color:var(--ac);transform:translateY(-1px);box-shadow:var(--e2);}
   .btn:active{transform:translateY(0) scale(.985);}
-  .btn.pri{background:var(--ac);color:var(--ink);border-color:var(--ac);font-weight:700;
+  .btn.pri{background:linear-gradient(165deg,#F0C563,var(--ac));color:#1A1305;border-color:var(--ac);font-weight:700;
     box-shadow:0 2px 12px -4px var(--ac-line);}
-  .btn.pri:hover{color:var(--ink);filter:brightness(1.1);box-shadow:0 6px 20px -6px var(--ac-line);}
+  .btn.pri:hover{color:#1A1305;filter:brightness(1.08);box-shadow:0 6px 20px -6px var(--ac-line);}
   .btn.gd{background:transparent;}
   .btn.ok{border-color:rgba(74,222,128,.4);color:var(--ok);}
   .btn.ok:hover{border-color:var(--ok);color:var(--ok);background:rgba(74,222,128,.09);}
@@ -138,10 +152,11 @@
 
   /* ---------- header ---------- */
   .hud{
-    border:1px solid var(--line);border-radius:var(--r3);padding:var(--sp4) var(--sp5);
+    border:1px solid var(--line2);border-radius:var(--r3);padding:var(--sp4) var(--sp5);
     display:flex;align-items:center;gap:var(--sp5);flex-wrap:wrap;position:relative;overflow:hidden;
-    background:linear-gradient(150deg,var(--s2) 0%,var(--s1) 55%,var(--s3) 100%);
-    box-shadow:var(--e3);
+    background:linear-gradient(150deg,rgba(255,255,255,.05),rgba(255,255,255,0) 40%),var(--glass);
+    backdrop-filter:var(--blur);-webkit-backdrop-filter:var(--blur);
+    box-shadow:var(--e3),inset 0 1px 0 rgba(255,255,255,.06);
   }
   .hud::after{content:'';position:absolute;left:0;right:0;top:0;height:1px;
     background:linear-gradient(90deg,transparent,var(--ac),transparent);opacity:.9;
@@ -198,9 +213,9 @@
   .course{display:grid;grid-template-columns:280px 1fr;gap:var(--sp4);align-items:start;}
   .rail{
     border:1px solid var(--line);border-radius:var(--r2);overflow:hidden;
-    background:linear-gradient(180deg,var(--s2),var(--s1));box-shadow:var(--e2);
+    background:var(--glass);box-shadow:var(--e2);
     position:sticky;top:var(--sp4);max-height:calc(100vh - 2*var(--sp4));overflow-y:auto;
-    backdrop-filter:blur(8px);
+    backdrop-filter:var(--blur);-webkit-backdrop-filter:var(--blur);
   }
   .rd{border-bottom:1px solid var(--line);}
   .rd:last-child{border-bottom:none;}
@@ -212,7 +227,7 @@
   .rd-b{display:none;padding:0 0 var(--sp2);}
   .rd-b.on{display:block;animation:enter var(--base) var(--ease);}
   .rm{padding:var(--sp2) var(--sp3) var(--sp1) 17px;font-family:var(--mono);font-size:var(--f0);
-    letter-spacing:.14em;text-transform:uppercase;color:var(--fg4);}
+    letter-spacing:.14em;text-transform:uppercase;color:var(--fg3);}
   .rl{
     display:flex;align-items:flex-start;gap:var(--sp2);padding:8px var(--sp3) 8px 17px;
     font-size:var(--f3);cursor:pointer;color:var(--fg2);line-height:1.45;
@@ -236,15 +251,16 @@
   .setup b{color:var(--fg);font-weight:600;}
 
   /* ---------- annotated artifact ---------- */
-  .art{border:1px solid var(--line2);border-radius:var(--r2);background:#04070D;
-    overflow:hidden;margin:0 0 var(--sp4);box-shadow:var(--e2),inset 0 1px 0 rgba(255,255,255,.03);}
+  .art{border:1px solid var(--line2);border-radius:var(--r2);background:rgba(3,7,16,.65);
+    backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
+    overflow:hidden;margin:0 0 var(--sp4);box-shadow:var(--e2),inset 0 1px 0 rgba(255,255,255,.04);}
   .art-hd{display:flex;align-items:center;gap:var(--sp3);padding:10px var(--sp3);
     border-bottom:1px solid var(--line);background:linear-gradient(180deg,var(--s3),var(--s2));}
   .art-hd .dots{display:flex;gap:5px;}
   .art-hd .dots i{width:8px;height:8px;border-radius:50%;background:var(--line3);}
   .art-hd .fn{font-family:var(--mono);font-size:var(--f1);color:var(--fg2);}
   .art-hd .kd{margin-left:auto;font-family:var(--mono);font-size:var(--f0);letter-spacing:.14em;
-    text-transform:uppercase;color:var(--fg4);}
+    text-transform:uppercase;color:var(--fg3);}
   .art-b{overflow-x:auto;padding:var(--sp3) 0;}
   .al{display:flex;align-items:flex-start;font-family:var(--mono);font-size:var(--f3);
     line-height:1.85;white-space:pre;padding:0 var(--sp4);
@@ -256,12 +272,12 @@
   .al .m b{display:inline-flex;align-items:center;justify-content:center;width:17px;height:17px;
     border-radius:50%;background:var(--ac);color:var(--ink);font-size:var(--f0);font-weight:700;
     line-height:1;box-shadow:0 0 0 3px var(--ac-dim);transition:transform var(--base) var(--spring);}
-  .al .c{flex:1;color:#AFC0DA;padding-right:var(--sp4);}
+  .al .c{flex:1;color:var(--fg2);padding-right:var(--sp4);}
   .al.hi{background:var(--ac-dim);box-shadow:inset 2px 0 0 var(--ac);}
   .al.hi .c{color:#fff;}
   .al.hi .m b{transform:scale(1.18);}
-  .al .c .k{color:var(--ac);} .al .c .s{color:#86EFAC;} .al .c .n{color:#FBBF24;}
-  .al .c .x{color:var(--no);} .al .c .q{color:#4B5B7A;font-style:italic;}
+  .al .c .k{color:var(--ac);} .al .c .s{color:#86EFAC;} .al .c .n{color:var(--warn);}
+  .al .c .x{color:var(--no);} .al .c .q{color:#5A6B8C;font-style:italic;}
 
 .al.dsel{cursor:pointer;padding-right:var(--sp3);}
   .al.dsel:hover{background:rgba(255,255,255,.05);}
@@ -295,15 +311,16 @@
   /* ---------- flashcards ---------- */
   .fc{
     min-height:210px;border-radius:var(--r3);border:1px solid var(--line2);
-    background:linear-gradient(165deg,var(--s3),var(--s2));
+    background:linear-gradient(165deg,rgba(255,255,255,.05),rgba(255,255,255,0) 45%),var(--glass-hi);
+    backdrop-filter:var(--blur);-webkit-backdrop-filter:var(--blur);
     display:flex;align-items:center;justify-content:center;text-align:center;
     padding:var(--sp7) var(--sp6) var(--sp6);cursor:pointer;font-size:var(--f6);
-    line-height:1.6;position:relative;box-shadow:var(--e2);
+    line-height:1.6;position:relative;box-shadow:var(--e2),inset 0 1px 0 rgba(255,255,255,.05);
     transition:transform var(--base) var(--ease),border-color var(--base) var(--ease),
       box-shadow var(--base) var(--ease),background var(--base) var(--ease);
   }
   .fc:hover{border-color:var(--line3);transform:translateY(-2px);box-shadow:var(--e3);}
-  .fc.flip{background:linear-gradient(165deg,var(--s2),var(--s1));border-color:var(--ac-line);}
+  .fc.flip{background:linear-gradient(165deg,rgba(255,255,255,.03),rgba(255,255,255,0) 45%),var(--glass);border-color:var(--ac-line);}
   .fc .fl{position:absolute;top:var(--sp3);left:var(--sp4);}
   .fc .dt{position:absolute;top:var(--sp3);right:var(--sp4);font-family:var(--mono);
     font-size:var(--f0);letter-spacing:.13em;font-weight:500;}
@@ -317,7 +334,8 @@
 
   /* ---------- notes tab ---------- */
   .dblk{border:1px solid var(--line);border-radius:var(--r2);margin-bottom:var(--sp3);
-    overflow:hidden;background:linear-gradient(180deg,var(--s2),var(--s1));box-shadow:var(--e1);}
+    overflow:hidden;background:var(--glass);backdrop-filter:var(--blur);-webkit-backdrop-filter:var(--blur);
+    box-shadow:var(--e1);}
   .dblk-h{padding:var(--sp4) var(--sp4);display:flex;align-items:center;gap:var(--sp3);
     cursor:pointer;user-select:none;transition:background var(--base) var(--ease);}
   .dblk-h:hover{background:rgba(255,255,255,.03);}
@@ -328,7 +346,7 @@
   ul.tl li{padding:10px 0 10px 20px;border-bottom:1px solid var(--line);position:relative;
     font-size:var(--f4);line-height:1.7;color:var(--fg2);}
   ul.tl li::before{content:'';position:absolute;left:2px;top:18px;width:5px;height:5px;
-    border-radius:50%;background:var(--fg4);}
+    border-radius:50%;background:var(--gold);}
   ul.tl li:last-child{border-bottom:none;}
   .traps{margin-top:var(--sp4);padding:var(--sp4);border-left:2px solid var(--warn);
     background:rgba(251,191,36,.055);border-radius:0 var(--r1) var(--r1) 0;}
@@ -341,7 +359,8 @@
   .opt{
     display:block;width:100%;text-align:left;padding:12px var(--sp4);margin-bottom:var(--sp2);
     border-radius:var(--r1);border:1px solid var(--line2);
-    background:linear-gradient(180deg,var(--s3),var(--s2));color:var(--fg);
+    background:linear-gradient(180deg,rgba(255,255,255,.04),rgba(255,255,255,0)),var(--glass-hi);
+    color:var(--fg);
     font-size:var(--f4);cursor:pointer;line-height:1.55;font-family:var(--sans);
     transition:transform var(--fast) var(--ease),border-color var(--base) var(--ease),
       background var(--base) var(--ease),box-shadow var(--base) var(--ease);
@@ -360,7 +379,7 @@
   .ostrip{min-height:48px;border:1px dashed var(--line3);border-radius:var(--r2);padding:var(--sp2);
     margin-bottom:var(--sp3);display:flex;flex-direction:column;gap:var(--sp2);background:var(--ac-dim);}
   .oslot{display:flex;align-items:center;gap:var(--sp3);padding:10px var(--sp3);border-radius:var(--r1);
-    background:var(--s2);border:1px solid var(--ac-line);font-size:var(--f4);cursor:pointer;
+    background:var(--glass-hi);border:1px solid var(--ac-line);font-size:var(--f4);cursor:pointer;
     transition:border-color var(--base) var(--ease),transform var(--fast) var(--ease);}
   .oslot:hover{border-color:var(--ac);transform:translateX(2px);}
   .oslot .n{font-family:var(--mono);font-size:var(--f1);color:var(--ac);width:16px;flex-shrink:0;font-weight:700;}
@@ -368,7 +387,7 @@
   .oslot .mk{margin-left:auto;font-family:var(--mono);font-size:var(--f1);flex-shrink:0;}
   .opool{display:flex;flex-direction:column;gap:var(--sp2);}
   .oitem{padding:11px var(--sp4);border-radius:var(--r1);border:1px solid var(--line2);
-    background:linear-gradient(180deg,var(--s3),var(--s2));font-size:var(--f4);cursor:pointer;
+    background:linear-gradient(180deg,rgba(255,255,255,.04),rgba(255,255,255,0)),var(--glass-hi);font-size:var(--f4);cursor:pointer;
     transition:transform var(--fast) var(--ease),border-color var(--base) var(--ease),box-shadow var(--base) var(--ease);}
   .oitem:hover{border-color:var(--ac);transform:translateX(4px);box-shadow:var(--e1);}
   .onone{font-family:var(--mono);font-size:var(--f1);color:var(--fg3);padding:var(--sp1);}
@@ -376,7 +395,7 @@
   .mgrid{display:flex;gap:var(--sp3);flex-wrap:wrap;}
   .mcol{flex:1;min-width:230px;display:flex;flex-direction:column;gap:var(--sp2);}
   .mi{padding:11px var(--sp3);border-radius:var(--r1);border:1px solid var(--line2);
-    background:linear-gradient(180deg,var(--s3),var(--s2));font-size:var(--f4);cursor:pointer;
+    background:linear-gradient(180deg,rgba(255,255,255,.04),rgba(255,255,255,0)),var(--glass-hi);font-size:var(--f4);cursor:pointer;
     line-height:1.55;transition:transform var(--fast) var(--ease),border-color var(--base) var(--ease),
       background var(--base) var(--ease),box-shadow var(--base) var(--ease);}
   .mi:hover{border-color:var(--line3);transform:translateY(-1px);}
@@ -415,7 +434,8 @@
   .brow .t i{display:block;height:100%;border-radius:99px;
     transition:width var(--slow) var(--spring);}
   .brow .v{width:60px;text-align:right;flex-shrink:0;color:var(--fg2);font-variant-numeric:tabular-nums;}
-  .qbox{margin:var(--sp4) 0;padding:var(--sp4);background:rgba(255,255,255,.02);
+  .qbox{margin:var(--sp4) 0;padding:var(--sp4);background:var(--glass);
+    backdrop-filter:var(--blur);-webkit-backdrop-filter:var(--blur);
     border-radius:var(--r2);border:1px solid var(--line);}
 
   /* ---------- lists ---------- */
@@ -435,7 +455,8 @@
   .hrow:last-child{border-bottom:none;}
   .stats{display:flex;gap:var(--sp3);flex-wrap:wrap;}
   .st{flex:1;min-width:110px;border:1px solid var(--line);border-radius:var(--r2);
-    padding:var(--sp4);background:linear-gradient(165deg,var(--s3),var(--s2));
+    padding:var(--sp4);background:linear-gradient(165deg,rgba(255,255,255,.05),rgba(255,255,255,0) 45%),var(--glass);
+    backdrop-filter:var(--blur);-webkit-backdrop-filter:var(--blur);
     transition:transform var(--base) var(--ease),box-shadow var(--base) var(--ease),
       border-color var(--base) var(--ease);}
   .st:hover{transform:translateY(-2px);box-shadow:var(--e2);border-color:var(--line2);}
@@ -671,7 +692,7 @@ const DOMAINS=[
 const D=id=>DOMAINS.find(x=>x.id===id);
 const DECKS={acr:{id:'acr',name:'Acronym drill',color:'#5EEAD4',rgb:'94,234,212',short:'ACR'}};
 const dk=id=>D(id)||DECKS[id]||{name:'—',color:'#5E718F',rgb:'94,113,143',short:'—'};
-const DEFAULT_AC={hex:'#7DD3FC',rgb:'125,211,252'};
+const DEFAULT_AC={hex:'#E4B33F',rgb:'228,179,63'};
 function setAccent(hex,rgb){
   const s=document.documentElement.style;
   s.setProperty('--ac',hex); s.setProperty('--ac-dim','rgba('+rgb+',.13)');
@@ -7087,9 +7108,6 @@ QUESTIONS.push(
  {id:'fq48',d:'eng',type:'mcq',q:'A dependency name used internally is unclaimed on the public registry, and the build pulls a higher public version. What is this?',
   opts:['Typosquatting','Dependency confusion','Cache poisoning','Cross-site scripting'],a:1,
   e:'Dependency confusion exploits resolver precedence and unclaimed namespaces. Typosquatting relies on a human misspelling instead.'},
- {id:'fq49',d:'eng',type:'mcq',q:'What distinguishes measured boot from verified boot?',
-  opts:['Measured boot skips signature checks for speed','Verified boot blocks invalidly signed components; measured boot records hashes to TPM PCRs enabling remote attestation','Measured boot applies only to virtual machines','They are vendor synonyms'],a:1,
-  e:'Verified boot enforces inline. Measured boot creates a signed transcript a remote verifier can evaluate.'},
  {id:'fq50',d:'eng',type:'mcq',q:'Secure Boot is enabled yet a validly signed but vulnerable bootloader is exploited. Which control addresses this?',
   opts:['Rotating the platform key annually','Maintaining a current dbx revocation database','Disabling measured boot','Enabling full disk encryption'],a:1,
   e:'Secure Boot trusts anything correctly signed. Revocation via dbx is how known-vulnerable signed components stop being accepted.'},
@@ -7675,9 +7693,6 @@ QUESTIONS.push(
  {id:'q5j',d:'arch',type:'mcq',q:'Which of these is a testable security requirement?',
   opts:['The system must be secure against common attacks','All API endpoints must require a valid OIDC token and return 401 when it is absent','Data should be appropriately protected','Developers should follow secure coding practices'],a:1,
   e:'A testable requirement names a mechanism and an observable outcome that QA can verify and an auditor can sample.'},
- {id:'q5k',d:'arch',type:'mcq',q:'How does RASP differ from IAST?',
-  opts:['They are the same technology','Both instrument the application, but IAST finds defects during testing while RASP blocks attacks in production','RASP performs static source analysis','IAST inspects only network traffic'],a:1,
-  e:'The instrumentation is comparable; phase and purpose differ. IAST is a testing tool, RASP a runtime control.'},
  {id:'q5l',d:'arch',type:'mcq',q:'A pipeline security check reports findings but cannot fail the build. What is the consequence?',
   opts:['Faster build times with equivalent assurance','It is not a gate — findings accumulate ignored while appearing to provide assurance','Developers receive better feedback','Compliance requirements are still satisfied'],a:1,
   e:'A gate must be able to block. Warning-only checks produce the appearance of control without the effect.'},
@@ -7699,9 +7714,6 @@ QUESTIONS.push(
  {id:'q5r',d:'eng',type:'mcq',q:'A key ceremony requires that no individual can reconstruct the master key but any three of five custodians can. Which technique?',
   opts:['Key escrow','Key splitting via m-of-n secret sharing','Key stretching','Hardware acceleration'],a:1,
   e:'Shamir-style secret sharing divides a key into shares where a threshold reconstructs it, giving availability without a single point of trust.'},
- {id:'q5s',d:'eng',type:'mcq',q:'What does hardware cryptographic acceleration provide?',
-  opts:['Stronger cryptographic guarantees','Higher throughput for the same algorithm, with no change to cryptographic strength','Automatic key rotation','Post-quantum resistance'],a:1,
-  e:'AES-NI and offload cards are performance controls. The algorithm and its strength are unchanged.'},
  {id:'q5t',d:'eng',type:'mcq',q:'Why is a one-time pad impractical despite being information-theoretically secure?',
   opts:['The algorithm is patented','It requires a truly random key as long as the message, used only once, making distribution infeasible at scale','It is vulnerable to quantum attack','It cannot encrypt binary data'],a:1,
   e:'Key length, true randomness and single use are the constraints. Reusing the pad destroys the security guarantee entirely.'},
@@ -7869,9 +7881,6 @@ QUESTIONS.push(
  {id:'ops-w22',d:'ops',type:'mcq',q:'Why do adversaries favour living-off-the-land binaries such as rundll32 and certutil?',
   opts:['They run faster than custom malware','They are vendor-signed, native and typically allow-listed, so identity-based controls do not flag them','They cannot be logged','They require administrative privilege'],a:1,
   e:'LOLBins are legitimate signed tools. Detection must key on anomalous context — unexpected parent, command line, or network behavior.'},
- {id:'ops-w23',d:'ops',type:'mcq',q:'Which observation most reliably indicates credential dumping?',
-  opts:['High CPU utilisation on a domain controller','A process opening a handle to LSASS with read-memory access rights','An outbound connection on port 443','A scheduled task created overnight'],a:1,
-  e:'The behavior is the signal, not the tool name. LSASS memory access with suspicious rights is high fidelity; renaming the utility changes nothing.'},
  {id:'ops-w24',d:'ops',type:'mcq',q:'Why does rotating passwords fail to contain pass-the-hash and pass-the-ticket movement?',
   opts:['Rotation is too slow to complete','Authentication uses a stolen hash or Kerberos ticket without requiring the plaintext password','The techniques target service accounts only','Hashes are stored in plaintext'],a:1,
   e:'These techniques reuse the credential material directly. Containment requires Credential Guard, privileged access workstations, tiering and ticket invalidation.'},

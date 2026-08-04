@@ -125,6 +125,8 @@ function assert(cond, msg) { if (!cond) failures.push(msg); }
   }
   const links = [...html.matchAll(/<link[^>]*href="([^"]+)"/g)].map(m => m[1]);
   for (const href of links) {
+    // data: URIs (e.g. an inline SVG favicon) never touch the network.
+    if (href.startsWith('data:')) continue;
     if (!/fonts\.(googleapis|gstatic)\.com/.test(href)) failures.push(`unexpected <link> to non-fonts host: ${href}`);
   }
 
