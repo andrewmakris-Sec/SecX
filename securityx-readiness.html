@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>SECX READINESS</title>
-<meta name="description" content="A self-contained study tool for the CompTIA SecurityX (CAS-005) exam: 121 lessons, 559 flashcards, 452 practice questions, and a full-length exam simulator. Runs entirely offline.">
+<meta name="description" content="A self-contained study tool for the CompTIA SecurityX (CAS-005) exam: 122 lessons, 563 flashcards, 458 practice questions, and a full-length exam simulator. Runs entirely offline.">
 <meta name="robots" content="noindex, nofollow">
 <meta property="og:title" content="SecX // Readiness">
 <meta property="og:description" content="Offline CompTIA SecurityX (CAS-005) exam prep — lessons, flashcards, question drills, and exam simulation in one file.">
@@ -588,7 +588,7 @@
 
   <nav id="nav">
     <button class="tab on" data-t="home" title="Overview and quick links">Home</button>
-    <button class="tab" data-t="course" title="121 lessons across 4 domains">Course</button>
+    <button class="tab" data-t="course" title="Lessons across 4 domains">Course</button>
     <button class="tab" data-t="flash" title="Spaced-repetition flashcards">Cards<span class="b" id="bDue" hidden></span></button>
     <button class="tab" data-t="notes" title="Per-domain topic and trap reference">Notes</button>
     <button class="tab" data-t="drill" title="Practice questions, filtered your way">Drill<span class="b" id="bMiss" hidden></span></button>
@@ -3568,6 +3568,48 @@ COURSE.eng.push({m:'OT, IoT & legacy systems (obj 3.5)',ls:[
   check:{q:'A constrained IoT sensor cannot support certificate-based authentication or an endpoint agent. What is the correct architectural response?',
    opts:['Accept the risk and connect it to the general network','Isolate it on a restricted segment with default-deny egress and front it with a gateway that authenticates on its behalf','Require the vendor to add a TPM before deployment','Disable the device network interface entirely'],a:1,
    e:'When the endpoint cannot enforce controls, enforcement moves to the network and a broker. Procurement requirements address the class longer term.'}},
+]});
+
+/* ===== OBJ 3.5 gap-closure: the exam names specific device categories
+   (drones, RFID, wearables, AMI) that the general "constrained device"
+   lesson above never names — genuine phrasing the exam actually uses ===== */
+COURSE.eng.push({m:'Named specialized-device categories (obj 3.5)',ls:[
+ {id:'c-ot3',t:'Recognize the specific device categories the exam names',
+  setup:'The general "constrained device" reasoning from the last lesson is correct, but the exam tests it by naming specific device categories. Knowing the category tells you the actual attack surface.',
+  art:{fn:'device-inventory-audit.txt',kd:'specialized device categories',lines:[
+   {c:'CATEGORY          WHAT MAKES IT DIFFERENT FROM A LAPTOP'},
+   {c:'RFID / NFC badge  <x>passive, no power, no auth beyond UID</x>',m:1},
+   {c:'  <s>controls: encrypted tag standards, reader allow-listing</s>'},
+   {c:''},
+   {c:'drone / UAV       <x>RF control + video link, GPS spoofable</x>',m:2},
+   {c:'  <s>controls: signed firmware, geofencing, RF link auth</s>'},
+   {c:''},
+   {c:'wearable          <x>continuous BLE sync, health data at rest</x>',m:3},
+   {c:'  <s>controls: pairing hardening, on-device encryption at rest</s>'},
+   {c:''},
+   {c:'smart meter (AMI) <x>two-way grid link, mass-deployed firmware</x>',m:4},
+   {c:'  <s>controls: signed OTA updates, per-device key material</s>'},
+   {c:''},
+   {c:'multifunction     <x>holds scan/print jobs, often unpatched,</x>',m:5},
+   {c:'printer/copier    <x>frequently has default creds and SNMP open</x>'},
+   {c:'  <s>controls: firmware updates, disable unused services</s>'},
+   {c:''},
+   {c:'building HVAC/BAS <x>network-connected, rarely patched,</x>',m:6},
+   {c:'controller        <x>physical-consequence failure mode</x>'},
+   {c:'  <s>controls: OT-style segmentation, vendor remote-access review</s>'},
+  ]},
+  notes:[
+   'RFID/NFC tags are passive and have no power budget for real cryptography — the exam wants you to know the risk is UID cloning and reader spoofing, not malware.',
+   'A drone is a network endpoint with a radio control link and often GPS; the meaningful attacks are RF hijack, GPS spoofing, and unsigned firmware, not conventional host compromise.',
+   'Wearables sync health telemetry continuously over BLE and store it on-device; the exam-relevant risk is unencrypted local storage plus BLE pairing downgrade, both already covered generically but worth naming here.',
+   'Advanced Metering Infrastructure (smart meters) is a mass-deployed fleet with a two-way grid communication channel — a single firmware flaw is a fleet-wide problem, and per-device keys limit blast radius.',
+   'Multifunction printers are a classic overlooked pivot: they hold sensitive scanned documents, ship with default credentials, and often leave SNMP or old print protocols exposed.',
+   'Building management/HVAC controllers combine "rarely patched" with "failure has physical consequences," which is why they get OT-style segmentation rather than standard IT patch cadence.',
+  ],
+  away:'The underlying reasoning for every constrained/specialized device is the same — isolate, gateway, procure for signed updates — but the exam names the categories directly: RFID, drones, wearables, AMI smart meters, MFPs and building controllers. Recognize the name, then apply the same compensating pattern.',
+  check:{q:'A fleet of smart electricity meters (AMI) ships a firmware defect. What is the most consequential aspect of this compared to a single-server vulnerability?',
+   opts:['AMI devices are always physically inaccessible','The defect is duplicated across every deployed meter, and per-device key material limits how far a single compromise spreads','Smart meters cannot be updated at all','The grid link makes this purely a safety issue, not a security one'],a:1,
+   e:'Mass-deployed fleets turn one firmware defect into a fleet-wide exposure; per-device keys (rather than one shared fleet key) are what actually bounds the blast radius of a single compromised unit.'}},
 ]});
 
 /* ===== OBJ 3.7 — advanced cryptography (was 54%) ===== */
@@ -6847,6 +6889,14 @@ FLASHCARDS.push(
  {id:'acr-ai1',d:'acr',f:'LLM / RAG',b:'Large Language Model / Retrieval-Augmented Generation — grounding model output in retrieved documents, which is also an indirect prompt injection surface.'}
 );
 
+/* ---- obj 3.5 gap-closure: named specialized-device categories ---- */
+FLASHCARDS.push(
+ {id:'sd1',d:'eng',f:'RFID/NFC badge risk',b:'Passive, no power budget for real cryptography. Practical defenses are physical — encrypted tag standards and reader allow-listing — not a stronger cipher.'},
+ {id:'sd2',d:'eng',f:'Drone/UAV-specific risk',b:'The distinguishing risk is the live RF control/telemetry link and GPS dependency: hijack or spoofing has an immediate, physical, in-flight consequence.'},
+ {id:'sd3',d:'eng',f:'AMI (smart meter) risk',b:'Mass-deployed fleet with a two-way grid link. Per-device key material (not one shared fleet key) bounds how far a single firmware compromise spreads.'},
+ {id:'sd4',d:'eng',f:'Multifunction printer risk',b:'Holds scanned/printed documents, frequently ships with default credentials and exposed SNMP, and is rarely treated like a server — a classic overlooked pivot.'}
+);
+
 /* ---- gap-closure questions ---- */
 QUESTIONS.push(
  {id:'nq1',d:'arch',o:'2.4',type:'mcq',q:'A switch places devices that fail 802.1X onto a VLAN with routed access to internal servers. What is the security consequence?',
@@ -8608,6 +8658,22 @@ QUESTIONS.push(
   e:'Authorization has to be proven before the CA will look at a CSR: order first, then prove control via a challenge, then finalize with the CSR only after validation succeeds. Submitting the CSR earlier would ask the CA to sign for a domain it has not yet verified.'}
 );
 
+/* ---- obj 3.5 gap-closure: named specialized-device categories ---- */
+QUESTIONS.push(
+ {id:'sd1',d:'eng',o:'3.5',type:'mcq',q:'Why is a stolen RFID access badge fundamentally different from a stolen password to defend against?',
+  opts:['RFID badges use stronger encryption than passwords','A passive tag has no power budget for real cryptography, so the practical defenses are physical (allow-listed readers) not cryptographic','RFID badges cannot be cloned','Passwords are always weaker than RFID credentials'],a:1,
+  e:'Passive RFID/NFC tags cannot run meaningful crypto on harvested reader power, so UID cloning is the realistic threat and reader allow-listing plus encrypted tag standards are the practical mitigation, not a stronger cipher.'},
+ {id:'sd2',d:'eng',o:'3.5',type:'mcq',q:'A commercial drone fleet is added to the asset inventory. Which risk is specific to drones rather than generic IoT?',
+  opts:['Weak default web admin passwords','RF control-link hijack and GPS spoofing that can redirect or down the aircraft in flight','SQL injection in the flight-planning API','Outdated TLS library versions'],a:1,
+  e:'Drones carry the generic IoT risks too, but the distinguishing exam-relevant risk is the live RF control/telemetry link and GPS dependency — hijack or spoofing has a physical, in-flight consequence.'},
+ {id:'sd3',d:'eng',o:'3.5',type:'multi',q:'Select TWO controls that most directly reduce risk from a fleet of AMI smart meters.',
+  opts:['Per-device key material rather than one shared fleet key','Cryptographically signed OTA firmware updates','Disabling the two-way grid communication entirely','Requiring an on-site technician for every reading'],a:[0,1],
+  e:'Per-device keys bound the blast radius of one compromised meter, and signed updates stop a malicious firmware push. Disabling two-way communication defeats the point of AMI; on-site readings defeat the automation it exists for.'},
+ {id:'sd4',d:'eng',o:'3.5',type:'mcq',q:'A multifunction printer is found with default credentials and SNMP exposed. Why is this a meaningful finding, not just noise?',
+  opts:['Printers cannot be exploited remotely','It holds scanned/printed documents and is a commonly overlooked network pivot that is rarely patched','SNMP is always encrypted by default','Default credentials only affect the print queue, nothing else'],a:1,
+  e:'MFPs combine sensitive document storage with default-credential, unpatched exposure — a classic overlooked pivot point precisely because nobody treats a printer like a server.'}
+);
+
 /* ===== PRACTITIONER ROADMAP =====
    A second organizing view over the same lessons, in the user's
    preferred learning order. NOTE: this is a practitioner skills
@@ -9804,7 +9870,7 @@ document.getElementById('bClrDate').onclick=async()=>{examDate=null;eDate.value=
   await sSet(K.date,null);updateHud();renderPlan();};
 /* ===================== HOME ===================== */
 const NAV_CARDS=[
-  {t:'course',ic:'CRS',n:'Course',d:'121 lessons across GRC, ARCH, ENG and OPS, artifact-first with inline checks.',
+  {t:'course',ic:'CRS',n:'Course',d:'Lessons across GRC, ARCH, ENG and OPS, artifact-first with inline checks.',
     v:()=>FLAT.length?(FLAT.filter(l=>lessonDone[l.id]).length+' / '+FLAT.length+' done'):''},
   {t:'flash',ic:'CRD',n:'Cards',d:'Spaced-repetition flashcards across every domain plus an acronym deck.',
     v:()=>dueCount()+' due'},
