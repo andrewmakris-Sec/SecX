@@ -63,6 +63,18 @@ function assert(cond, msg) { if (!cond) failures.push(msg); }
     failures.push(`duplicate question IDs: ${[...dupes].join(', ')}`);
   }
 
+  // --- Objective tags (o:) reference a real objective in the question's own domain ---
+  const objById = {};
+  data.OBJECTIVES.forEach(o => objById[o.id] = o);
+  let untagged = 0;
+  for (const q of QUESTIONS) {
+    if (q.o == null) { untagged++; continue; }
+    const obj = objById[q.o];
+    if (!obj) failures.push(`question ${q.id}: o:'${q.o}' does not match any OBJECTIVES id`);
+    else if (obj.d !== q.d) failures.push(`question ${q.id}: o:'${q.o}' belongs to domain ${obj.d}, but question is tagged d:'${q.d}'`);
+  }
+  if (untagged) failures.push(`${untagged} question(s) have no objective tag (o:) — expected full coverage`);
+
   // --- Invariant 5: multi prompts state the matching count word ---
   for (const q of QUESTIONS) {
     if (q.type !== 'multi') continue;
