@@ -655,6 +655,7 @@
         <option value="mcq">Multiple choice</option>
         <option value="multi">Multi-select</option>
         <option value="order">Ordering · PBQ</option>
+        <option value="build">Build config · PBQ</option>
         <option value="match">Matching · PBQ</option>
         <option value="defect">Defect review · PBQ</option>
       </select>
@@ -8558,6 +8559,54 @@ COURSE.ops.push({m:'Hardening & configuration control',ls:[
    e:'Build-time hardening decays through manual changes, package updates, and stale templates. Only continuous measurement describes the current state, and never-baselined hosts plus expired exceptions are material findings.'}},
 ]});
 
+/* ---- build: assemble a real config/script/protocol flow from fragments.
+   Same grading as 'order' (sequence = the array order below); the only
+   difference is the optional q.ctx artifact rendered above the picker so
+   it reads as completing a real file, not reordering an abstract list. ---- */
+QUESTIONS.push(
+ {id:'bd1',d:'arch',type:'build',
+  ctx:{fn:'netpol.yaml',kd:'k8s manifest — complete the spec',
+    lines:['apiVersion: networking.k8s.io/v1','kind: NetworkPolicy','metadata:','  name: api-default-deny',
+      'spec:','  podSelector: {}','  policyTypes: [Ingress]']},
+  q:'Complete the ingress rule so only the checkout pod can reach this pod on 8443.',
+  items:[' ingress:','  - from:','    - podSelector:','        matchLabels:','          app: checkout',
+    '    ports:','      - port: 8443'],
+  e:'YAML nests by line order and indentation: ingress before from, from before the selector, the selector before its label match, and ports as a sibling list under the same from entry. Any other order is either invalid YAML or scopes the rule incorrectly.'},
+ {id:'bd2',d:'arch',type:'build',
+  ctx:{fn:'edge-acl.txt',kd:'stateless ACL — rules evaluate top to bottom, first match wins',lines:['ACL: edge-in']},
+  q:'Order these ACL entries so the specific allows take effect and the deny-all cannot black-hole them.',
+  items:['permit tcp any host 10.0.0.10 eq 443','permit tcp 10.0.0.0/24 host 10.0.0.10 eq 22','deny ip any any log'],
+  e:'First-match-wins means the narrowest rules must sit above the broad deny. Deny-all first would block everything; putting it before the SSH rule would lock out admin access before the HTTPS rule was even reached.'},
+ {id:'bd3',d:'eng',type:'build',
+  ctx:{fn:'handshake.txt',kd:'TLS 1.2 full handshake, RSA key exchange',lines:['Client -> Server: ClientHello']},
+  q:'Order the remaining TLS 1.2 handshake messages as they occur on the wire.',
+  items:['Server -> Client: ServerHello','Server -> Client: Certificate','Server -> Client: ServerHelloDone',
+    'Client -> Server: ClientKeyExchange','Client -> Server: ChangeCipherSpec','Client -> Server: Finished',
+    'Server -> Client: ChangeCipherSpec','Server -> Client: Finished'],
+  e:'The server answers ClientHello with its Hello, certificate and HelloDone in one flight. The client then sends its key material, flips to the negotiated cipher, and sends Finished; the server mirrors that to close the handshake. ChangeCipherSpec always precedes that side’s Finished.'},
+ {id:'bd4',d:'ops',type:'build',
+  ctx:{fn:'contain.sh',kd:'containment script for host 10.4.2.18',lines:['#!/bin/bash']},
+  q:'Order these containment commands so evidence is preserved before the host loses network reachability.',
+  items:['memdump --host 10.4.2.18 --out /evidence/mem.raw','iptables -I FORWARD -s 10.4.2.18 -j LOG --log-prefix "ISOLATED-"',
+    'iptables -I FORWARD -s 10.4.2.18 -j DROP','iptables -I FORWARD -d 10.4.2.18 -j DROP'],
+  e:'Volatile memory has to be captured before the host is cut off — isolating first risks losing live-capture reachability or triggering malware that reacts to a severed connection. Logging is inserted before the DROP rules so the block itself is recorded; both directions are dropped once evidence is safe.'},
+ {id:'bd5',d:'grc',type:'build',
+  ctx:{fn:'breach-response.txt',kd:'GDPR Article 33/34 timeline',lines:['Personal-data breach confirmed.']},
+  q:'Order the required steps once the breach is confirmed.',
+  items:['Contain the breach and stop further data exposure','Assess scope, data types affected, and likely risk to individuals',
+    'Notify the supervisory authority within 72 hours of becoming aware','Notify affected individuals directly if the risk is high',
+    'Document the breach, decisions and rationale regardless of notification outcome'],
+  e:'The 72-hour clock starts at awareness, so assessment has to move fast — but containment still comes first, since notifying about a breach that is still ongoing fixes nothing. Individual notification is conditional on risk; documentation is mandatory either way.'},
+ {id:'bd6',d:'eng',type:'build',
+  ctx:{fn:'acme-order.txt',kd:'ACME certificate issuance (RFC 8555)',lines:['Client holds an account key and a CSR for the target domain.']},
+  q:'Order these ACME protocol steps from request to issued certificate.',
+  items:['Client requests a new order specifying the domain identifiers','Server responds with pending authorizations and their challenges',
+    'Client completes a challenge (e.g. serves the HTTP-01 token)','Client tells the server the challenge is ready to validate',
+    'Server validates the challenge and marks the authorization valid','Client finalizes the order by submitting the CSR',
+    'Server issues the certificate for download'],
+  e:'Authorization has to be proven before the CA will look at a CSR: order first, then prove control via a challenge, then finalize with the CSR only after validation succeeds. Submitting the CSR earlier would ask the CA to sign for a domain it has not yet verified.'}
+);
+
 /* ===== PRACTITIONER ROADMAP =====
    A second organizing view over the same lessons, in the user's
    preferred learning order. NOTE: this is a practitioner skills
@@ -8674,7 +8723,7 @@ const esc=s=>String(s).replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[
 
 /* ===================== ANSWER LOGIC ===================== */
 function blankAns(q){
-  if(q.type==='multi'||q.type==='order'||q.type==='defect')return [];
+  if(q.type==='multi'||q.type==='order'||q.type==='build'||q.type==='defect')return [];
   if(q.type==='match')return {};
   return null;
 }
@@ -8732,7 +8781,7 @@ function isAnswered(q,a){
   if(a==null)return false;
   if(q.type==='mcq')return typeof a==='number';
   if(q.type==='multi')return Array.isArray(a)&&a.length>0;
-  if(q.type==='order')return Array.isArray(a)&&a.length===q.items.length;
+  if(q.type==='order'||q.type==='build')return Array.isArray(a)&&a.length===q.items.length;
   if(q.type==='match')return Object.keys(a).length===q.pairs.length;
   if(q.type==='defect')return Array.isArray(a)&&a.length>0;
   return false;
@@ -8744,7 +8793,7 @@ function isCorrect(q,a){
     const A=[...a].sort((x,y)=>x-y),B=[...q.a].sort((x,y)=>x-y);
     return A.length===B.length&&A.every((v,i)=>v===B[i]);
   }
-  if(q.type==='order')return a.every((v,i)=>v===i);
+  if(q.type==='order'||q.type==='build')return a.every((v,i)=>v===i);
   if(q.type==='match')return q.pairs.every((_,i)=>a[i]===i);
   if(q.type==='defect'){
     const A=[...a].sort((x,y)=>x-y),B=defectIdx(q);
@@ -8753,7 +8802,7 @@ function isCorrect(q,a){
   return false;
 }
 const TYPE_LABEL={mcq:'multiple choice',multi:'multi-select',order:'ordering · pbq',
-  match:'matching · pbq',defect:'defect review · pbq'};
+  match:'matching · pbq',defect:'defect review · pbq',build:'build config · pbq'};
 const multiNeed=q=>q.a.length;
 function shuf(n){const a=[...Array(n).keys()];
   for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
@@ -9116,7 +9165,7 @@ function renderQ(host,q,st){
   const body=document.createElement('div');host.appendChild(body);
   if(q.type==='mcq')rMcq(body,q,st);
   if(q.type==='multi')rMulti(body,q,st);
-  if(q.type==='order')rOrder(body,q,st);
+  if(q.type==='order'||q.type==='build')rOrder(body,q,st);
   if(q.type==='match')rMatch(body,q,st);
   if(q.type==='defect')rDefect(body,q,st);
   if(st.reveal){const e=document.createElement('div');e.className='exp on';e.textContent=q.e;host.appendChild(e);}
@@ -9158,8 +9207,19 @@ function rMulti(host,q,st){
 }
 function rOrder(host,q,st){
   const cur=Array.isArray(st.ans)?st.ans:[];
+  if(q.ctx){
+    const art=document.createElement('div');art.className='art';art.style.marginBottom='var(--sp4)';
+    art.innerHTML='<div class="art-hd"><span class="dots"><i></i><i></i><i></i></span>'
+      +'<span class="fn">'+esc(q.ctx.fn)+'</span><span class="kd">'+esc(q.ctx.kd)+'</span></div>'
+      +'<div class="art-b">'+q.ctx.lines.map((c,i)=>
+        '<div class="al"><span class="g">'+(i+1)+'</span><span class="m"></span><span class="c">'+(c||' ')+'</span></div>'
+      ).join('')+'</div>';
+    host.appendChild(art);
+  }
   const n=document.createElement('div');n.className='hint';n.style.marginBottom='9px';
-  n.textContent=st.locked?'Your sequence:':'Click items in the correct order. Click a placed item to remove it.';
+  n.textContent=st.locked?'Your sequence:'
+    :(q.type==='build'?'Click fragments below in the order they belong. Click a placed one to remove it.'
+      :'Click items in the correct order. Click a placed item to remove it.');
   host.appendChild(n);
   const strip=document.createElement('div');strip.className='ostrip';
   if(!cur.length){const e=document.createElement('div');e.className='onone';e.textContent='— empty —';strip.appendChild(e);}
@@ -9295,7 +9355,7 @@ function loadDrill(){
   const q=dQ[dI];
   dA=blankAns(q);dLock=false;dSel=null;
   dSh=q.type==='defect'?null
-    :shuf(q.type==='match'?q.pairs.length:(q.type==='order'?q.items.length:q.opts.length));
+    :shuf(q.type==='match'?q.pairs.length:((q.type==='order'||q.type==='build')?q.items.length:q.opts.length));
   paintDrill();
 }
 function paintDrill(){
@@ -9407,7 +9467,7 @@ function eStart(){
   ex.flag=new Array(ex.qs.length).fill(false);
   ex.sel=new Array(ex.qs.length).fill(null);
   ex.sh=ex.qs.map(q=>q.type==='defect'?null
-    :shuf(q.type==='match'?q.pairs.length:(q.type==='order'?q.items.length:q.opts.length)));
+    :shuf(q.type==='match'?q.pairs.length:((q.type==='order'||q.type==='build')?q.items.length:q.opts.length)));
   ex.i=0;
   if(ex.timed){
     ex.dl=Date.now()+(ex.real?165*60000:Math.round(ex.qs.length*1.8*60000));

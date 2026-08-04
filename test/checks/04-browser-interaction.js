@@ -78,18 +78,18 @@ async function run(seed) {
   const { renderQ, isAnswered, isCorrect } = fns;
   const byType = {};
   for (const q of data.QUESTIONS) if (!byType[q.type]) byType[q.type] = q;
-  assert(Object.keys(byType).length === 5, `expected all 5 question types present, found ${Object.keys(byType)}`);
+  assert(Object.keys(byType).length === 6, `expected all 6 question types present, found ${Object.keys(byType)}`);
 
   for (const [type, q] of Object.entries(byType)) {
     const host = document.createElement('div');
     document.body.appendChild(host);
-    let ans = type === 'match' ? {} : (type === 'multi' || type === 'order' || type === 'defect' ? [] : null);
+    let ans = type === 'match' ? {} : (type === 'multi' || type === 'order' || type === 'build' || type === 'defect' ? [] : null);
     let matchSel = null;
     const st = {
       get ans() { return ans; },
       get matchSel() { return matchSel; },
       locked: false, reveal: false,
-      shuf: q.type === 'defect' ? null : [...Array(q.type === 'match' ? q.pairs.length : q.type === 'order' ? q.items.length : q.opts.length).keys()],
+      shuf: q.type === 'defect' ? null : [...Array(q.type === 'match' ? q.pairs.length : (q.type === 'order' || q.type === 'build') ? q.items.length : q.opts.length).keys()],
       onAnswer: (a, s) => { ans = a; if (s !== undefined) matchSel = s; renderQ(host, q, st); },
     };
     renderQ(host, q, st);
@@ -98,7 +98,7 @@ async function run(seed) {
       host.querySelectorAll('.opt')[q.a].click();
     } else if (type === 'multi') {
       for (const idx of q.a) host.querySelectorAll('.opt')[idx].click();
-    } else if (type === 'order') {
+    } else if (type === 'order' || type === 'build') {
       for (let i = 0; i < q.items.length; i++) host.querySelector('.oitem').click();
     } else if (type === 'match') {
       for (let i = 0; i < q.pairs.length; i++) {
@@ -138,7 +138,7 @@ async function run(seed) {
       document.getElementById('eQ').querySelector('.opt').click();
     } else if (q.type === 'multi') {
       for (let k = 0; k < q.a.length; k++) document.getElementById('eQ').querySelectorAll('.opt')[k].click();
-    } else if (q.type === 'order') {
+    } else if (q.type === 'order' || q.type === 'build') {
       for (let k = 0; k < q.items.length; k++) {
         const pool = document.getElementById('eQ').querySelector('.oitem');
         if (pool) pool.click();
@@ -190,5 +190,5 @@ async function run(seed) {
     allFailures.forEach(f => console.error(' -', f));
     process.exit(1);
   }
-  console.log(`PASS: browser interaction — ${RUNS}/${RUNS} runs clean (tabs, flashcard, all 5 question types, full exam cycle, hover + accent)`);
+  console.log(`PASS: browser interaction — ${RUNS}/${RUNS} runs clean (tabs, flashcard, all 6 question types, full exam cycle, hover + accent)`);
 })().catch(err => { console.error('FAIL: browser interaction threw:', err); process.exit(1); });

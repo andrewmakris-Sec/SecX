@@ -50,6 +50,9 @@ function assert(cond, msg) { if (!cond) failures.push(msg); }
   for (const l of FLAT) {
     for (const ln of l.art.lines || []) tagBalance(ln.c || '', `lesson ${l.id} artifact line`);
   }
+  for (const q of QUESTIONS) {
+    if (q.ctx) for (const ln of q.ctx.lines || []) tagBalance(ln || '', `question ${q.id} ctx line`);
+  }
 
   // --- Invariant 4: question IDs globally unique ---
   const qIds = QUESTIONS.map(q => q.id);
@@ -148,6 +151,11 @@ function assert(cond, msg) { if (!cond) failures.push(msg); }
   assert(!isAnswered(orderQ, [0, 1]), 'order: partial sequence should not be answered');
   assert(isCorrect(orderQ, [0, 1, 2]), 'order: identity sequence should grade correct');
   assert(!isCorrect(orderQ, [1, 0, 2]), 'order: swapped adjacent items should grade incorrect');
+
+  const buildQ = { type: 'build', items: ['a', 'b', 'c'] };
+  assert(!isAnswered(buildQ, []), 'build: empty should not be answered');
+  assert(isCorrect(buildQ, [0, 1, 2]), 'build: identity sequence should grade correct');
+  assert(!isCorrect(buildQ, [2, 1, 0]), 'build: reversed sequence should grade incorrect');
 
   const matchQ = { type: 'match', pairs: [['a', '1'], ['b', '2'], ['c', '3']] };
   assert(!isAnswered(matchQ, {}), 'match: empty should not be answered');

@@ -43,7 +43,7 @@ const tick = (window, ms = 0) => new Promise(r => window.setTimeout(r, ms));
       a.document.getElementById('eQ').querySelector('.opt').click();
     } else if (q.type === 'multi') {
       for (let k = 0; k < q.a.length; k++) a.document.getElementById('eQ').querySelectorAll('.opt')[k].click();
-    } else if (q.type === 'order') {
+    } else if (q.type === 'order' || q.type === 'build') {
       for (let k = 0; k < q.items.length; k++) {
         const pool = a.document.getElementById('eQ').querySelector('.oitem');
         if (pool) pool.click();
