@@ -22,6 +22,19 @@ async function run(seed) {
     assert(panel && panel.classList.contains('on'), `panel p-${t} did not activate on click`);
   }
 
+  // --- domain overview: clicking a rail domain header shows an overview,
+  // and clicking one of its module cards drops into that module's first lesson ---
+  document.querySelector('.tab[data-t="course"]').click();
+  const domainHeader = document.querySelector('.rd-h');
+  assert(domainHeader, 'no domain header found in the course rail');
+  domainHeader.click();
+  const moduleCards = document.querySelectorAll('#lesson .nav-card');
+  assert(moduleCards.length > 0, 'domain overview rendered no module cards');
+  moduleCards[0].click();
+  const lessonTitle = document.querySelector('#lesson h2');
+  assert(lessonTitle && lessonTitle.textContent.length > 0, 'clicking a module card did not open a lesson');
+  assert(!document.querySelector('#lesson .nav-grid'), 'still showing the domain overview after clicking into a module');
+
   // --- home nav-card click routes to the right tab ---
   document.querySelector('.tab[data-t="home"]').click();
   const flashCard = document.querySelector('#hmGrid .nav-card[data-go="flash"]');

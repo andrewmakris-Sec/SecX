@@ -8771,6 +8771,7 @@ const FLAT=[];
 DOMAINS.forEach(d=>(COURSE[d.id]||[]).forEach((mod,mi)=>mod.ls.forEach(l=>
   FLAT.push({...l,dom:d.id,mod:mod.m,mi}))));
 let curId=FLAT.length?FLAT[0].id:null;
+let curDomView=null;
 const curLesson=()=>FLAT.find(l=>l.id===curId);
 const lessonsIn=dom=>FLAT.filter(l=>l.dom===dom);
 const doneIn=dom=>lessonsIn(dom).filter(l=>lessonDone[l.id]).length;
@@ -8786,7 +8787,7 @@ function renderRail(){
     h.style.color=d.color;
     h.innerHTML='<i style="width:7px;height:7px;border-radius:50%;background:'+d.color+';flex-shrink:0"></i>'
       +d.short+'<span class="pc">'+doneIn(d.id)+'/'+ls.length+'</span>';
-    const b=document.createElement('div'); b.className='rd-b'+(cur&&cur.dom===d.id?' on':'');
+    const b=document.createElement('div'); b.className='rd-b'+((cur&&cur.dom===d.id)||curDomView===d.id?' on':'');
     let lastMod=null;
     ls.forEach(l=>{
       if(l.mod!==lastMod){
@@ -8795,12 +8796,52 @@ function renderRail(){
       const row=document.createElement('div');
       row.className='rl'+(l.id===curId?' on':'')+(lessonDone[l.id]?' done':'');
       row.innerHTML='<span class="dot">'+(lessonDone[l.id]?'✓':'')+'</span><span>'+esc(l.t)+'</span>';
-      row.onclick=()=>{curId=l.id;renderCourse();};
+      row.onclick=()=>{curId=l.id;curDomView=null;renderCourse();};
       b.appendChild(row);
     });
-    h.onclick=()=>b.classList.toggle('on');
+    h.onclick=()=>{curDomView=d.id;curId=null;renderCourse();};
     wrap.appendChild(h); wrap.appendChild(b); rail.appendChild(wrap);
   });
+}
+const DOMAIN_DESC={
+  grc:'Governance, Risk & Compliance is judgment under real constraints: which framework actually applies, how a risk gets sized and treated, what a regulator or auditor will ask for, and how a program keeps functioning through a crisis. Expect scenarios that test whether you can defend a decision, not recite a definition.',
+  arch:'Security Architecture is designing systems that hold up under real conditions: network segmentation, zero trust, cloud and hybrid identity, secure SDLC, and the tradeoffs between resilience and cost. The exam wants you to pick the right control for a described environment, not define a term.',
+  eng:'Security Engineering & Cryptography is the largest domain — PKI, key management, secure protocols, hardware roots of trust, automation, and the reasoning behind why one cryptographic approach fails and another holds. Expect to read a config or an exchange and find exactly where it breaks.',
+  ops:'Security Operations is what happens once something goes wrong, or before it can: monitoring, threat hunting, vulnerability management, and incident response through containment, analysis and attribution. The exam tests triage judgment under incomplete information, not tool syntax.',
+};
+function renderDomainOverview(domId){
+  const host=document.getElementById('lesson'); host.innerHTML='';
+  const d=D(domId); setAccent(d.color,d.rgb);
+  const ls=lessonsIn(domId);
+  const hd=document.createElement('div'); hd.className='lhd';
+  hd.innerHTML='<div style="flex:1;min-width:220px">'
+    +'<div class="row" style="gap:7px;margin-bottom:8px">'
+    +'<span class="chip" style="border:1px solid '+d.color+';color:'+d.color+'"><i style="background:'+d.color+'"></i>'+d.short+'</span>'
+    +'<span class="tag">'+d.weight+'% of exam</span>'
+    +'<span class="tag">'+doneIn(domId)+' / '+ls.length+' lessons done</span></div>'
+    +'<h2>'+esc(d.name)+'</h2></div>';
+  host.appendChild(hd);
+  const setup=document.createElement('div'); setup.className='setup';
+  setup.textContent=DOMAIN_DESC[domId]||'';
+  host.appendChild(setup);
+  const ttl=document.createElement('h3'); ttl.className='sect'; ttl.textContent='Modules in this domain';
+  host.appendChild(ttl);
+  const mods=[]; const seen=new Set();
+  ls.forEach(l=>{
+    if(!seen.has(l.mod)){seen.add(l.mod); mods.push({name:l.mod,items:ls.filter(x=>x.mod===l.mod)});}
+  });
+  const grid=document.createElement('div'); grid.className='nav-grid';
+  mods.forEach(m=>{
+    const done=m.items.filter(l=>lessonDone[l.id]).length;
+    const btn=document.createElement('button'); btn.className='nav-card';
+    btn.innerHTML='<div class="ic" style="color:'+d.color+';border-color:'+d.color+';background:rgba('+d.rgb+',.14)">'
+      +done+' / '+m.items.length+'</div>'
+      +'<div class="n">'+esc(m.name)+'</div>'
+      +'<div class="d">'+esc(m.items[0].t)+(m.items.length>1?' — plus '+(m.items.length-1)+' more':'')+'</div>';
+    btn.onclick=()=>{curId=m.items[0].id;curDomView=null;renderCourse();};
+    grid.appendChild(btn);
+  });
+  host.appendChild(grid);
 }
 function renderLesson(){
   const host=document.getElementById('lesson'); host.innerHTML='';
@@ -8894,7 +8935,9 @@ function renderLesson(){
   }
   host.appendChild(foot);
 }
-function renderCourse(){renderRail();renderLesson();}
+function renderCourse(){renderRail();
+  if(curDomView&&!curId)renderDomainOverview(curDomView); else renderLesson();
+}
 
 /* ===================== FLASHCARDS ===================== */
 const fcDeck=document.getElementById('fcDeck'),fcMode=document.getElementById('fcMode');
