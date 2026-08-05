@@ -2871,6 +2871,13 @@ const CRAM = {
     'Compensating controls must be documented AND approved.',
     'Zero Trust ignores network location as a trust signal.',
   ],
+  examDay:[
+    'Up to 90 questions, 165 minutes, Pearson VUE (test center or OnVUE at home). Pass/fail only — no scaled score, no domain breakdown.',
+    'PBQs (drag-and-drop, click, sometimes a live VM/lab task with real credentials) are reported clustered early — often within the first ~30 questions. A slow start does not mean the rest will be equally slow.',
+    'A PBQ eating disproportionate time is not worth stalling over — flag it, take your best answer, and move on. Multiple passing candidates report skipping the simulation-style item entirely.',
+    'No result is shown at the end of the exam — check your Pearson VUE exam history rather than waiting on a notification email. Turnaround has ranged from minutes to multiple days in reported cases.',
+    'This app’s 75% pass line and per-domain breakdown are self-imposed study aids — CompTIA publishes neither a passing score nor a score report.',
+  ],
 };
 
 
@@ -9888,8 +9895,9 @@ function eIdle(){
     prac.style.display=real?'none':'flex';
     note.innerHTML=real
       ? 'Matches published CAS-005 conditions: <b>90 questions in 165 minutes</b>, domain-weighted, '
-        +'mixed multiple-choice and performance-based. You will get a <b>pass/fail verdict first</b> \u2014 '
-        +'the real exam releases no score \u2014 with the numeric breakdown underneath.'
+        +'mixed multiple-choice and performance-based, with PBQs <b>clustered in the first third</b> \u2014 '
+        +'reported real sittings front-load them, so a slow start is not a preview of the rest. You will get a '
+        +'<b>pass/fail verdict first</b> \u2014 the real exam releases no score \u2014 with the numeric breakdown underneath.'
       : 'Shorter sets for targeted practice. Pacing is scaled to ~1.8 min per question.';
   }
   mode.onchange=syncMode; syncMode();
@@ -9913,6 +9921,12 @@ function eStart(){
       const mcqIdx=ex.qs.map((q,i)=>q.type==='mcq'?i:-1).filter(i=>i>=0).sort(()=>Math.random()-.5);
       for(let k=0;k<want-have.length&&k<spare.length&&k<mcqIdx.length;k++) ex.qs[mcqIdx[k]]=spare[k];
     }
+    /* Reported real sittings cluster PBQs in roughly the first third of the exam. */
+    const pbqs=ex.qs.filter(q=>q.type!=='mcq');
+    const mcqs=ex.qs.filter(q=>q.type==='mcq').sort(()=>Math.random()-.5);
+    const zoneLen=Math.max(pbqs.length,Math.min(ex.qs.length,Math.ceil(ex.qs.length/3)));
+    const front=[...pbqs,...mcqs.splice(0,Math.max(0,zoneLen-pbqs.length))].sort(()=>Math.random()-.5);
+    ex.qs=[...front,...mcqs];
   }
   ex.ans=ex.qs.map(q=>blankAns(q));
   ex.flag=new Array(ex.qs.length).fill(false);
@@ -10070,7 +10084,9 @@ function renderEHist(){
 /* ===================== CRAM ===================== */
 function renderCram(){
   const b=document.getElementById('cram');
-  let h='<h4>Formulas &amp; hard rules</h4>';
+  let h='<h4>Exam day — what CAS-005 is actually like</h4>';
+  CRAM.examDay.forEach(t=>h+='<div class="sq">• '+esc(t)+'</div>');
+  h+='<h4>Formulas &amp; hard rules</h4>';
   CRAM.formulas.forEach(x=>h+='<div class="kv"><b>'+esc(x[0])+'</b><span>'+esc(x[1])+'</span></div>');
   h+='<h4>Sequences to know cold</h4>';
   CRAM.sequences.forEach(x=>h+='<div class="sq"><b>'+esc(x[0])+':</b> '+esc(x[1])+'</div>');
