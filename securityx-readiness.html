@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>SECX READINESS</title>
-<meta name="description" content="A self-contained study tool for the CompTIA SecurityX (CAS-005) exam: 122 lessons, 563 flashcards, 458 practice questions, and a full-length exam simulator. Runs entirely offline.">
+<meta name="description" content="A self-contained study tool for the CompTIA SecurityX (CAS-005) exam: 129 lessons, 571 flashcards, 469 practice questions, and a full-length exam simulator. Runs entirely offline.">
 <meta name="robots" content="noindex, nofollow">
 <meta property="og:title" content="SecX // Readiness">
 <meta property="og:description" content="Offline CompTIA SecurityX (CAS-005) exam prep — lessons, flashcards, question drills, and exam simulation in one file.">
@@ -280,8 +280,8 @@
   .al.hi{background:var(--ac-dim);box-shadow:inset 2px 0 0 var(--ac);}
   .al.hi .c{color:#fff;}
   .al.hi .m b{transform:scale(1.18);}
-  .al .c .k{color:var(--ac);} .al .c .s{color:#86EFAC;} .al .c .n{color:var(--warn);}
-  .al .c .x{color:var(--no);} .al .c .q{color:#5A6B8C;font-style:italic;}
+  .al .c k{color:var(--ac);} .al .c s{color:#86EFAC;text-decoration:none;} .al .c n{color:var(--warn);}
+  .al .c x{color:var(--no);} .al .c q{color:#5A6B8C;font-style:italic;quotes:none;}
 
 .al.dsel{cursor:pointer;padding-right:var(--sp3);}
   .al.dsel:hover{background:rgba(255,255,255,.05);}
@@ -3644,6 +3644,210 @@ COURSE.eng.push({m:'Named specialized-device categories (obj 3.5)',ls:[
    e:'Mass-deployed fleets turn one firmware defect into a fleet-wide exposure; per-device keys (rather than one shared fleet key) are what actually bounds the blast radius of a single compromised unit.'}},
 ]});
 
+/* ===== OBJ 4.3 gap-closure: hunting maturity, intel fusion, TLP scope, OSINT caveats —
+   named concepts the exam tests that were previously only touched in passing ===== */
+COURSE.ops.push({m:'Hunting maturity and intelligence discipline (obj 4.3)',ls:[
+ {id:'c-hm1',t:'Place a hunt program on the Hunting Maturity Model',
+  setup:'A SOC director asks whether the hunt program is actually maturing or just producing activity. The Hunting Maturity Model (HMM) answers that with a level, not a feeling.',
+  art:{fn:'hmm-selfassess.txt',kd:'hunting maturity model',lines:[
+   {c:'HM0  INITIAL      <x>no real hunting — reactive alert triage only</x>',m:1},
+   {c:'HM1  MINIMAL      <s>consumes external threat intel, applies it manually</s>',m:2},
+   {c:'HM2  PROCEDURAL   <s>runs documented hunting procedures written by others</s>',m:3},
+   {c:'HM3  INNOVATIVE   <s>creates its own hunting procedures from its own data</s>',m:4},
+   {c:'HM4  LEADING      <s>automates its procedures into standing detections</s>',m:5},
+   {c:''},
+   {c:'THIS TEAM: runs a documented weekly hunting checklist written by a vendor'},
+   {c:'  -> HM2. No new procedures produced yet; nothing feeds back to HM3.'},
+   {c:''},
+   {c:'CLIMB PATH'},
+   {c:'  <s>capture every hunt as a written, repeatable procedure</s>',m:6},
+   {c:'  <s>track hypotheses tested vs findings, not just alerts closed</s>',m:7},
+   {c:'  <s>convert a proven manual hunt into an automated standing detection</s>',m:8},
+  ]},
+  notes:[
+   'HM0 is not really hunting: it is alert triage with a hunting label. The distinguishing question is whether anyone looks for what the alerts did not catch.',
+   'HM1 means intelligence flows in but nothing is produced back out — the team consumes feeds and manually checks for matches, one-directionally.',
+   'HM2 means the team executes someone else procedures on a schedule. That is real hunting, but it is borrowed maturity, not built maturity.',
+   'HM3 is the first level where the team originates net-new hunting procedures from its own telemetry and its own hypotheses.',
+   'HM4 is the payoff: a manual hunting procedure that keeps finding things gets converted into an automated, standing detection so humans stop re-running it by hand.',
+   'Moving up a level requires an artifact, not effort: a written procedure for HM1->HM2, an original hypothesis for HM2->HM3, an automated rule for HM3->HM4.',
+   'A hunt program is only improving if procedures are being written down and hunts once done manually are being converted into detections.',
+   'Counting alerts closed measures triage, not hunting maturity — it is the wrong metric for this question entirely.',
+  ],
+  away:'The Hunting Maturity Model has five levels (HM0-HM4) defined by where procedures come from and whether hunts get automated — not by headcount or tool spend. Know the level names and what moves a team up one.',
+  check:{q:'A team runs hunting procedures written entirely by a commercial threat-intel vendor, on schedule, with no procedures of its own. What Hunting Maturity Model level is this?',
+   opts:['HM0 — Initial','HM2 — Procedural','HM3 — Innovative','HM4 — Leading'],a:1,
+   e:'Executing someone else’s documented procedures on a schedule is HM2. HM3 requires the team to originate its own procedures from its own data.'}},
+ {id:'c-hm2',t:'Fuse internal telemetry with external intelligence before acting on either',
+  setup:'An IOC feed says an IP is malicious. Your own logs show that IP made one connection last month. Acting on either signal alone is how false positives and missed detections both happen.',
+  art:{fn:'intel-fusion.txt',kd:'intelligence fusion',lines:[
+   {c:'EXTERNAL   IOC feed: 203.0.113.9 = C2 for FIN-like loader (confidence: medium)',m:1},
+   {c:'INTERNAL   proxy log: 203.0.113.9 contacted once, 40 days ago, by a marketing host',m:2},
+   {c:'INTERNAL   EDR: same host has no other anomalies in that window',m:3},
+   {c:''},
+   {c:'FUSION VERDICT'},
+   {c:'  <s>low-confidence external + no corroborating internal signal = low priority</s>',m:4},
+   {c:'  <x>acting on the feed alone would have opened an incident on nothing</x>',m:5},
+   {c:'  <x>ignoring the feed alone would have skipped a legitimate lead to check</x>',m:6},
+   {c:''},
+   {c:'OSINT CAVEAT   <q>an open list of "known bad" IPs is not itself evidence</q>',m:7},
+   {c:'  <s>unvetted, unknown age, no context — use to enrich, never to convict</s>',m:8},
+  ]},
+  notes:[
+   'A medium-confidence external indicator on its own is a lead, not a verdict — intelligence fusion means it never gets acted on alone.',
+   'One contact, 40 days old, from a single host is thin internal corroboration — old and sparse, but not nothing, which is exactly why it needs checking rather than either escalating or dismissing.',
+   'No other anomalies on that host in the same window is itself informative: it weighs toward low priority rather than toward an active compromise.',
+   'Fusing a medium-confidence external signal with weak, old, unremarkable internal activity is exactly the case fusion exists for: check it, do not escalate it, do not dismiss it.',
+   'Acting on the external feed alone, with nothing internal to support it, is how a SOC opens an incident on effectively nothing.',
+   'Ignoring the external feed entirely because it is "just a feed" is how a real lead gets skipped — the fix is fusion, not blanket distrust of external intel.',
+   'An open OSINT list of "known bad" indicators is not itself evidence of anything in your environment — it is a claim with no attached confidence or context.',
+   'OSINT sources are frequently unvetted, of unknown age, with no corroboration. Treat them as enrichment for something you already suspect, never as standalone proof.',
+  ],
+  away:'Fuse external intelligence with your own telemetry before acting on either — an indicator with no internal corroboration is a lead, not a verdict, and OSINT specifically should enrich a suspicion, never manufacture one.',
+  check:{q:'A public OSINT list flags an IP as malicious. Your logs show no contact with that IP at all. What is the correct action?',
+   opts:['Open a high-severity incident immediately','Block it and move on with no further check','Note it for enrichment only — there is nothing to fuse it with, so there is nothing to act on','Ignore all OSINT sources permanently'],a:2,
+   e:'With zero internal corroboration, the external indicator has nothing to fuse with. It is filed as context for a future lead, not acted on as if it were confirmed.'}},
+ {id:'c-hm3',t:'Read a TLP marking and know exactly who you may tell',
+  setup:'An ISAC bulletin arrives marked TLP:AMBER. Forwarding it to the wrong audience is a real policy violation, not a formality.',
+  art:{fn:'tlp-bulletin.txt',kd:'traffic light protocol',lines:[
+   {c:'TLP:RED           <x>named recipients only, in the room/thread, no further sharing</x>',m:1},
+   {c:'TLP:AMBER+STRICT  <n>your organization only, need-to-know</n>',m:2},
+   {c:'TLP:AMBER         <n>your org plus its clients, on a need-to-know basis</n>',m:3},
+   {c:'TLP:GREEN         <s>your community — peers, partners — but not the public</s>',m:4},
+   {c:'TLP:CLEAR         <s>unlimited distribution</s>',m:5},
+   {c:''},
+   {c:'THIS BULLETIN: TLP:AMBER, forwarded to the public status page'},
+   {c:'  -> <x>violation — AMBER stops at your org and its clients, not the public</x>',m:6},
+  ]},
+  notes:[
+   'TLP:RED is the tightest — the named people in the original exchange, nowhere else, not even paraphrased.',
+   'TLP:AMBER+STRICT limits distribution to your own organization only. Plain AMBER extends one step further, to your clients or customers who need it.',
+   'TLP:GREEN allows sharing within a defined community of peers, but stops short of the open public internet.',
+   'TLP:CLEAR (formerly TLP:WHITE) is the only level meant for unlimited, public distribution.',
+   'Posting an AMBER-marked bulletin to a public status page skips past two restriction levels — it is a real handling violation, not a style choice.',
+   'The marking travels with the content: forwarding, quoting, or summarizing a TLP-marked bulletin carries the same restriction as the original.',
+  ],
+  away:'TLP has five levels — RED, AMBER+STRICT, AMBER, GREEN, CLEAR — each defining who may receive the content next, and the restriction travels with any forwarded or summarized copy.',
+  check:{q:'A threat bulletin marked TLP:GREEN is posted to the open public internet. What is wrong with that?',
+   opts:['Nothing — GREEN permits unlimited distribution','GREEN is limited to a defined community of peers/partners; the public is one step further than the marking allows','GREEN is stricter than AMBER, so this under-shares','TLP does not apply to threat bulletins'],a:1,
+   e:'TLP:GREEN scopes distribution to a defined community, not the general public. Only TLP:CLEAR is meant for unlimited distribution.'}},
+]});
+
+/* ===== OBJ 2.3 gap-closure: deceptive/disruptive technology as one integrated
+   architectural control CLASS, not a scattered set of OPS response tactics ===== */
+COURSE.arch.push({m:'Deceptive and disruptive technology (obj 2.3)',ls:[
+ {id:'c-dt1',t:'Integrate deception as a designed control, not an incident-response trick',
+  setup:'Honeytokens, honeypots and sinkholes already appear elsewhere in this course as detection tactics. The architecture question is different: do you design deception INTO the environment on purpose, and what does that decision cost?',
+  art:{fn:'deception-layer.txt',kd:'deceptive & disruptive controls',lines:[
+   {c:'CONTROL          WHAT IT IS                          WHAT IT COSTS'},
+   {c:'honeytoken       <s>fake credential/record, alerts on use</s>   near-zero upkeep',m:1},
+   {c:'honeypot         <s>single fake service, invites interaction</s> needs isolation + monitoring',m:2},
+   {c:'honeynet         <s>a whole fake segment, mirrors production</s> real build + maintenance cost',m:3},
+   {c:'decoy file       <s>planted file that should never be opened</s>  near-zero upkeep',m:4},
+   {c:'port spoofing    <s>service on the wrong port to confuse scanners</s> can break legitimate tooling',m:5},
+   {c:'DNS sinkhole     <s>redirect bad lookups to a controlled address</s> requires forced resolvers',m:6},
+   {c:''},
+   {c:'DESIGN DECISION   <q>where does this sit, and who owns the legal/ethical review?</q>',m:7},
+   {c:'  <x>a honeynet with no segmentation is a pivot point, not a control</x>',m:8},
+   {c:'  <x>deception that nobody monitors produces silence, not signal</x>',m:9},
+  ]},
+  notes:[
+   'A honeytoken (a fake credential or record that alerts on use) is nearly free to deploy at scale — the distinction that matters architecturally is cost, and this is the cheapest control in the class.',
+   'A honeypot is one fake service meant to be found and interacted with, which already needs its own isolation and someone watching it — a real, if modest, commitment.',
+   'A honeynet is an entire fake environment built to hold an adversary long enough to observe them — a genuine infrastructure build with its own segmentation and maintenance budget, not a bigger honeypot.',
+   'A decoy file works the same way as a honeytoken — its value is entirely in nobody legitimate ever touching it, so any access is itself the alert.',
+   'Port spoofing (running a service on a non-standard port, or a decoy on an expected one) can just as easily break internal scanners and monitoring tools as it confuses an attacker — that cost has to be weighed, not ignored.',
+   'DNS sinkholing only works as an architectural control if internal hosts are actually forced onto internal resolvers; otherwise infected hosts route around it entirely.',
+   'Legal and ethical review matters here specifically because deception interacts with employees, guests and sometimes external parties who never consented to being deceived — this is a real architectural decision, not just a technical one.',
+   'Deception integrated without isolation is a liability: an unsegmented honeynet gives a real adversary a real foothold next to real assets.',
+   'Deception integrated without monitoring is theater: if nobody watches the honeytoken fire, it never functioned as a control, regardless of how convincing it looked.',
+  ],
+  away:'Deceptive and disruptive technology is one control class — honeytokens, honeypots, honeynets, decoy files, port spoofing, DNS sinkholing — and every one of them requires the same two things to function as a control rather than a liability: isolation from real assets, and someone actually monitoring it.',
+  check:{q:'A honeynet is deployed on the same flat network as production servers, with no dedicated monitoring assigned. What is the architectural problem?',
+   opts:['Honeynets are never a legitimate control','Nothing — honeynets work automatically once deployed','It functions as an unmonitored pivot point next to real assets rather than a functioning control','Honeynets should always be publicly reachable'],a:2,
+   e:'Deception only works as a control with isolation and active monitoring. Without either, a honeynet is an extra unmonitored segment sitting next to production — a liability, not a detection mechanism.'}},
+]});
+
+/* ===== OBJ 1.5 gap-closure: model transparency, adversarial testing, and the
+   training-data provenance risk that sits underneath both ===== */
+COURSE.grc.push({m:'AI transparency and provenance risk (obj 1.5)',ls:[
+ {id:'c-at1',t:'Read a model card for what it actually discloses',
+  setup:'Procurement forwards a vendor model card and asks if it is enough for approval. A model card is a transparency artifact, not an assurance report — knowing the difference is the point.',
+  art:{fn:'model-card-excerpt.txt',kd:'model transparency documentation',lines:[
+   {c:'MODEL CARD: support-triage-v4'},
+   {c:'  Intended use      <s>internal ticket triage, English only</s>',m:1},
+   {c:'  Training data     <n>"proprietary and licensed sources" — no further detail</n>',m:2},
+   {c:'  Known limitations <s>degrades on non-English input; no medical/legal advice</s>',m:3},
+   {c:'  Evaluation results <s>internal benchmark only, no third-party evaluation</s>',m:4},
+   {c:''},
+   {c:'WHAT THIS DOES NOT TELL YOU'},
+   {c:'  <x>whether training data included your customers or their content</x>',m:5},
+   {c:'  <x>whether the model was independently red-teamed before release</x>',m:6},
+   {c:'  <x>whether "proprietary and licensed" survives a copyright challenge</x>',m:7},
+  ]},
+  notes:[
+   'Intended-use scoping is the vendor telling you where the model is expected to work — useful, but it is a claim, not a tested boundary.',
+   'Vague training-data provenance ("proprietary and licensed sources") is common and is itself the risk signal: it tells you the vendor will not commit to specifics you could audit.',
+   'Known limitations disclosed by the vendor are real information, but they are only the limitations the vendor chose to state — absence of a limitation here is not evidence it does not exist.',
+   'A model card describing only internal benchmarks, with no independent evaluation, is disclosing less assurance than it appears to at first read.',
+   'The card says nothing about whether your own customers or their content could be in the training set — that requires asking directly, not inferring from the card.',
+   'Independent red-teaming (adversarial testing by a party other than the vendor) is a separate claim from anything a standard model card discloses.',
+   'A vague provenance statement like "proprietary and licensed" is exactly the kind of claim that has not been tested against a real copyright challenge — the card cannot tell you how it would hold up.',
+  ],
+  away:'A model card discloses intended use and known limitations in the vendor own words — useful, but it is not independent verification, and a vague training-data statement is itself something to press on, not something to accept.',
+  check:{q:'A vendor model card lists training data only as "proprietary and licensed sources." What should this prompt?',
+   opts:['Nothing further — the card satisfies due diligence','Immediate rejection of any AI vendor','Follow-up questions on data provenance, since the card discloses no auditable detail','Assume the data is entirely public domain'],a:2,
+   e:'A model card is self-disclosure, not verification. A vague provenance statement is a prompt for specific follow-up questions, not a stopping point and not an automatic disqualifier.'}},
+ {id:'c-at2',t:'Distinguish red-teaming a model from red-teaming a network',
+  setup:'Security leadership hears "we red-teamed the model" and assumes it means the usual thing. It does not — the target, the findings and the fix path are all different.',
+  art:{fn:'ai-redteam-scope.txt',kd:'adversarial model testing',lines:[
+   {c:'NETWORK RED TEAM        AI MODEL RED TEAM'},
+   {c:'target: infrastructure   <s>target: the model behavior itself</s>',m:1},
+   {c:'goal: reach an objective <s>goal: elicit harmful/policy-violating output</s>',m:2},
+   {c:'finding: exploited host  <s>finding: a prompt that bypasses guardrails</s>',m:3},
+   {c:'fix: patch, segment      <s>fix: retrain, filter, or constrain the tool surface</s>',m:4},
+   {c:''},
+   {c:'OVERLAP  <q>both need a defined scope, a written report, and a retest</q>',m:5},
+   {c:'GAP      <x>a clean network pentest says nothing about model behavior</x>',m:6},
+  ]},
+  notes:[
+   'Network red-teaming targets infrastructure and access; AI model red-teaming targets the model behavior — whether it can be prompted into unsafe, biased, or policy-violating output.',
+   'The goal differs too: a network engagement aims to reach a defined objective inside the environment, while an AI engagement aims to elicit output the model was supposed to refuse.',
+   'A network red-team finding is typically an exploited host or a path to one; an AI red-team finding is typically a specific prompt or pattern that defeats a guardrail.',
+   'The fix path differs too: a network finding gets patched or segmented, while an AI finding may require retraining, better output filtering, or reducing what the model/agent is allowed to do.',
+   'Both disciplines share real structure — defined scope, a written report, and a retest to confirm the fix — which is why they get conflated, but the target and the fix are not interchangeable.',
+   'A clean infrastructure pentest result says nothing about whether the deployed model can be prompted into unsafe behavior; the two engagements answer different questions and both may be needed.',
+  ],
+  away:'AI red-teaming tests model behavior for unsafe or policy-violating output, not infrastructure exploitability — a clean network pentest and a clean AI red-team are two separate claims, and having one does not imply the other.',
+  check:{q:'An organization completes a clean network penetration test on the infrastructure hosting its AI assistant. What can it conclude about the assistant itself?',
+   opts:['The model cannot be prompted into unsafe output','Nothing about the model behavior — that requires a separate AI-focused red-team exercise','The model has been fully red-teamed','No further testing of any kind is needed'],a:1,
+   e:'A network pentest evaluates infrastructure exploitability, not model behavior. Whether the model can be prompted into unsafe or policy-violating output is a distinct question that needs its own adversarial testing.'}},
+ {id:'c-at3',t:'Treat training-data provenance as a legal exposure, not just a security one',
+  setup:'A vendor discloses that its model was trained partly on scraped public web content. Legal asks security whether this is "a security problem." It is, just not the way legal expects.',
+  art:{fn:'provenance-risk.txt',kd:'training data provenance',lines:[
+   {c:'SOURCE                  EXPOSURE'},
+   {c:'scraped public content  <x>copyright status of scraped works is unresolved</x>',m:1},
+   {c:'user-submitted content  <x>consent scope may not cover model training use</x>',m:2},
+   {c:'licensed dataset        <s>defensible IF the license actually covers training use</s>',m:3},
+   {c:''},
+   {c:'SECURITY ANGLE   <q>this is a supply-chain and vendor-risk question, not just legal</q>',m:4},
+   {c:'  <s>flow down: does your contract require the vendor to indemnify you?</s>',m:5},
+   {c:'  <s>flow down: can the vendor prove it, or only assert it?</s>',m:6},
+  ]},
+  notes:[
+   'Scraped public content carries unresolved copyright exposure — "it was on the public internet" is not the same as "licensed for this use," and that gap does not disappear because a model sits between the data and your output.',
+   'Content submitted by users under one consent scope (e.g. "to provide the service") may not have consented to a different use (training a model), which is a separate legal exposure from a data breach.',
+   'A licensed dataset is only actually defensible if the specific license terms cover training use — licenses written for other purposes do not automatically extend to this one.',
+   'This lands on security, not just legal, because it is fundamentally a supply-chain and vendor-risk question: what did you actually procure, and what liability did the vendor actually accept?',
+   'The two flow-down questions that matter in the vendor contract are whether it requires indemnification for this specific risk, and whether the vendor can prove its provenance claims rather than merely assert them.',
+   'Treating this as "not a security problem" misses that it is exactly the kind of third-party/supply-chain risk security already owns for every other vendor relationship.',
+  ],
+  away:'Training-data provenance is a supply-chain risk security should own: scraped and user-submitted content both carry consent/copyright exposure that a vendor contract should address directly, with proof, not just an assertion.',
+  check:{q:'A vendor states its model was trained on "licensed datasets" with no further detail. What is the security-relevant follow-up?',
+   opts:['None — "licensed" fully resolves the question','Whether the license terms actually cover training use, and whether the vendor can prove the claim rather than only assert it','Whether the datasets were free to acquire','Whether the model is open source'],a:1,
+   e:'A license only defends training use if its terms actually cover that use, and an unverifiable assertion is weaker than provable provenance — both are the concrete follow-up questions, not the word "licensed" itself.'}},
+]});
+
 /* ===== OBJ 3.7 — advanced cryptography (was 54%) ===== */
 COURSE.eng.push({m:'Advanced cryptography (obj 3.7)',ls:[
  {id:'c-ac1',t:'Choose cryptography against real constraints',
@@ -6929,6 +7133,18 @@ FLASHCARDS.push(
  {id:'sd4',d:'eng',f:'Multifunction printer risk',b:'Holds scanned/printed documents, frequently ships with default credentials and exposed SNMP, and is rarely treated like a server — a classic overlooked pivot.'}
 );
 
+/* ---- obj 4.3 / 2.3 / 1.5 gap-closure cards ---- */
+FLASHCARDS.push(
+ {id:'gc1',d:'ops',f:'Hunting Maturity Model (HM0-HM4)',b:'HM0 no real hunting (alert triage only). HM1 consumes external intel manually. HM2 runs documented procedures written by others. HM3 originates its own hunting procedures. HM4 automates proven procedures into standing detections.'},
+ {id:'gc2',d:'ops',f:'Intelligence fusion',b:'Combining an external signal with internal telemetry before acting on either. A low-confidence external indicator with no internal corroboration is a lead, not a verdict.'},
+ {id:'gc3',d:'ops',f:'OSINT caveat',b:'Open-source threat lists are typically unvetted, of unknown age, and uncorroborated. Use to enrich an existing suspicion — never as standalone proof.'},
+ {id:'gc4',d:'ops',f:'TLP levels (RED to CLEAR)',b:'RED: named recipients only. AMBER+STRICT: your org only. AMBER: your org plus clients, need-to-know. GREEN: a defined community. CLEAR: unlimited distribution. The marking travels with any forwarded copy.'},
+ {id:'gc5',d:'arch',f:'Deceptive/disruptive technology as a control class',b:'Honeytoken, honeypot, honeynet, decoy file, port spoofing, DNS sinkhole — one integrated architectural control class. Every one requires isolation from real assets and active monitoring to function as a control rather than a liability.'},
+ {id:'gc6',d:'grc',f:'Model card',b:'Vendor self-disclosed documentation of a model intended use, known limitations and sometimes evaluation results. Transparency artifact, not independent verification.'},
+ {id:'gc7',d:'grc',f:'AI red-teaming vs network red-teaming',b:'AI red-teaming targets model behavior (can it be prompted into unsafe output); network red-teaming targets infrastructure. A clean pentest says nothing about model behavior, and vice versa.'},
+ {id:'gc8',d:'grc',f:'Training-data provenance risk',b:'Scraped and user-submitted training data carry copyright/consent exposure that a vendor contract should address with proof, not assertion — a supply-chain risk security already owns for every other vendor.'}
+);
+
 /* ---- gap-closure questions ---- */
 QUESTIONS.push(
  {id:'nq1',d:'arch',o:'2.4',type:'mcq',q:'A switch places devices that fail 802.1X onto a VLAN with routed access to internal servers. What is the security consequence?',
@@ -8704,6 +8920,43 @@ QUESTIONS.push(
  {id:'sd4',d:'eng',o:'3.5',type:'mcq',q:'A multifunction printer is found with default credentials and SNMP exposed. Why is this a meaningful finding, not just noise?',
   opts:['Printers cannot be exploited remotely','It holds scanned/printed documents and is a commonly overlooked network pivot that is rarely patched','SNMP is always encrypted by default','Default credentials only affect the print queue, nothing else'],a:1,
   e:'MFPs combine sensitive document storage with default-credential, unpatched exposure — a classic overlooked pivot point precisely because nobody treats a printer like a server.'}
+);
+
+/* ---- obj 4.3 / 2.3 / 1.5 gap-closure questions ---- */
+QUESTIONS.push(
+ {id:'gq1',d:'ops',o:'4.3',type:'mcq',q:'A team executes hunting procedures written entirely by a commercial threat-intel vendor, on a fixed schedule, and has never produced an original procedure of its own. What Hunting Maturity Model level is this?',
+  opts:['HM0 — Initial','HM2 — Procedural','HM3 — Innovative','HM4 — Leading'],a:1,
+  e:'Executing someone else’s documented procedures on a schedule is HM2. HM3 requires the team to originate its own procedures from its own data.'},
+ {id:'gq2',d:'ops',o:'4.3',type:'mcq',q:'A hunting team converts a manual hunting procedure that has repeatedly found real activity into an automated, standing detection rule. What does this represent?',
+  opts:['A regression to HM0','No change in maturity','The HM3-to-HM4 transition','A sign the hunting program should be shut down'],a:2,
+  e:'HM4 (Leading) is defined by automating proven manual procedures into standing detections, so hunters stop re-running them by hand.'},
+ {id:'gq3',d:'ops',o:'4.3',type:'mcq',q:'A low-confidence external IOC feed flags an IP with zero corroborating activity in internal logs. What is the correct fused conclusion?',
+  opts:['Open a high-severity incident immediately','Ignore the feed entirely going forward','Log it as a low-priority lead — insufficient fused evidence for escalation, but not nothing','Block the IP and take no further action'],a:2,
+  e:'Fusion means neither source alone is the verdict. A low-confidence external signal with no internal corroboration supports a low-priority check, not an incident and not dismissal.'},
+ {id:'gq4',d:'ops',o:'4.3',type:'mcq',q:'A threat bulletin marked TLP:AMBER is forwarded to a public-facing status page. What is wrong with that?',
+  opts:['Nothing — AMBER permits public distribution','AMBER limits distribution to your organization and its clients on a need-to-know basis, not the public','AMBER is stricter than RED','TLP markings do not apply once a bulletin is summarized'],a:1,
+  e:'TLP:AMBER stops at your organization and its clients. Only TLP:CLEAR is intended for unlimited public distribution, and the marking travels with any forwarded or summarized copy.'},
+ {id:'gq5',d:'ops',o:'4.3',type:'multi',q:'Select TWO correct statements about using an unvetted public OSINT indicator list.',
+  opts:['It is sufficient standalone evidence to open an incident','It should be used to enrich an existing suspicion, not to manufacture one','Its entries are typically unvetted, of unknown age, and uncorroborated','It replaces the need for internal telemetry entirely'],a:[1,2],
+  e:'OSINT lists lack stated confidence, age or corroboration. They are enrichment context for something already suspected — never standalone proof, and never a substitute for internal telemetry.'},
+ {id:'gq6',d:'arch',o:'2.3',type:'mcq',q:'A honeynet is deployed on the same flat network as production servers with no dedicated monitoring assigned to it. What is the architectural problem?',
+  opts:['Honeynets are never legitimate','Nothing — deployment alone makes it a control','It functions as an unmonitored pivot point next to real assets rather than a working control','Honeynets must always be internet-facing'],a:2,
+  e:'Deception only works as a control with isolation and active monitoring. Without either, a honeynet is an extra unmonitored segment next to production — a liability, not a detection mechanism.'},
+ {id:'gq7',d:'arch',o:'2.3',type:'mcq',q:'What distinguishes a honeynet from a honeypot?',
+  opts:['They are the same thing','A honeypot is a single fake service; a honeynet is an entire fake environment built to hold an adversary for observation','A honeynet is always cheaper to maintain','A honeypot requires more infrastructure than a honeynet'],a:1,
+  e:'A honeypot is one fake service meant to be found; a honeynet is a full fake environment with its own segmentation and maintenance cost — a materially larger commitment.'},
+ {id:'gq8',d:'arch',o:'2.3',type:'multi',q:'Select TWO real costs of port spoofing as a deceptive control, beyond confusing an attacker.',
+  opts:['It can break legitimate internal scanners and monitoring tools','It requires no ongoing maintenance whatsoever','It always improves network performance','It can interfere with legitimate tooling that expects standard port behavior'],a:[0,3],
+  e:'Running services on non-standard ports to confuse attackers can just as easily break the organization’s own scanning and monitoring tools that assume standard port conventions — a real cost to weigh, not a free win.'},
+ {id:'gq9',d:'grc',o:'1.5',type:'mcq',q:'A vendor model card lists training data only as "proprietary and licensed sources," with no further detail. What is the correct interpretation?',
+  opts:['The card fully satisfies due diligence','This is itself a risk signal warranting specific follow-up questions on provenance','The data must be entirely public domain','Model cards are never relevant to procurement'],a:1,
+  e:'A model card is vendor self-disclosure, not independent verification. A vague provenance statement is a prompt for specific follow-up questions, not a stopping point.'},
+ {id:'gq10',d:'grc',o:'1.5',type:'mcq',q:'An organization completes a clean network penetration test on the infrastructure hosting its AI assistant. What can it conclude about the assistant’s behavior?',
+  opts:['The model cannot be prompted into unsafe output','Nothing about model behavior — that requires a separate AI-focused red-team exercise','The model has been fully red-teamed','No further testing is needed of any kind'],a:1,
+  e:'A network pentest evaluates infrastructure exploitability, not model behavior. Whether the model can be prompted into unsafe output is a distinct question needing its own adversarial testing.'},
+ {id:'gq11',d:'grc',o:'1.5',type:'mcq',q:'A vendor states its model was trained on "licensed datasets" with no further detail. What is the security-relevant follow-up?',
+  opts:['None — "licensed" fully resolves the question','Whether the license terms actually cover training use, and whether the vendor can prove the claim rather than only assert it','Whether the datasets were free to acquire','Whether the model is open source'],a:1,
+  e:'A license only defends training use if its terms actually cover that use, and an unverifiable assertion is weaker than provable provenance.'}
 );
 
 /* ===== PRACTITIONER ROADMAP =====
