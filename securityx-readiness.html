@@ -72,7 +72,7 @@
       radial-gradient(1000px 700px at 50% 118%, rgba(228,179,63,.07), transparent 65%);
     transition:background var(--slow) var(--ease);
   }
-  .wrap{max-width:1120px;margin:0 auto;padding:var(--sp5) var(--sp4) var(--sp7);position:relative;z-index:1;}
+  .wrap{max-width:1340px;margin:0 auto;padding:var(--sp5) var(--sp4) var(--sp7);position:relative;z-index:1;}
   ::selection{background:var(--ac-line);color:#fff;}
   a{color:var(--ac);text-decoration-thickness:1px;text-underline-offset:2px;}
   button{font-family:inherit;font-size:inherit;}
@@ -184,26 +184,28 @@
   .bar>u{position:absolute;bottom:-15px;left:50%;transform:translateX(-50%);
     font-family:var(--mono);font-size:8px;color:var(--fg3);text-decoration:none;letter-spacing:.06em;}
 
-  /* ---------- nav ---------- */
-  nav{display:flex;gap:2px;align-items:center;margin:var(--sp5) 0 var(--sp4);flex-wrap:wrap;
-    border-bottom:1px solid var(--line);}
-  .qsearch{margin-left:auto;min-width:0 !important;width:180px !important;padding:7px 10px !important;
-    font-size:var(--f2) !important;}
+  /* ---------- app body: sidebar nav + main content ---------- */
+  .app-body{display:flex;align-items:flex-start;gap:var(--sp5);margin-top:var(--sp5);}
+  nav{display:flex;flex-direction:column;gap:2px;width:196px;flex-shrink:0;
+    position:sticky;top:var(--sp4);max-height:calc(100vh - 2*var(--sp4));overflow-y:auto;
+    padding-right:2px;}
+  .panels{flex:1;min-width:0;}
+  .navgrp{font-family:var(--mono);font-size:var(--f0);letter-spacing:.15em;text-transform:uppercase;
+    color:var(--fg4);padding:var(--sp4) var(--sp2) 5px;font-weight:500;}
+  .navgrp:first-child{padding-top:0;}
+  .qsearch{width:100% !important;min-width:0 !important;padding:9px 11px !important;
+    font-size:var(--f2) !important;margin-bottom:var(--sp3);}
   .tab{
-    font-family:var(--mono);font-size:var(--f2);letter-spacing:.08em;text-transform:uppercase;
-    padding:12px 15px;color:var(--fg3);cursor:pointer;user-select:none;position:relative;
-    border:none;background:none;white-space:nowrap;font-weight:500;
-    transition:color var(--base) var(--ease);
+    display:flex;align-items:center;gap:var(--sp1);
+    font-family:var(--mono);font-size:var(--f2);letter-spacing:.05em;text-transform:uppercase;
+    padding:10px 12px;color:var(--fg3);cursor:pointer;user-select:none;position:relative;
+    border:none;background:none;white-space:nowrap;font-weight:500;text-align:left;width:100%;
+    border-radius:var(--r1);border-left:2px solid transparent;
+    transition:color var(--base) var(--ease),background var(--base) var(--ease),border-color var(--base) var(--ease);
   }
-  .tab::before{content:'';position:absolute;inset:4px 6px;border-radius:var(--r1);
-    background:rgba(255,255,255,.05);opacity:0;transition:opacity var(--base) var(--ease);}
-  .tab:hover{color:var(--fg2);}
-  .tab:hover::before{opacity:1;}
-  .tab.on{color:var(--fg);}
-  .tab.on::after{content:'';position:absolute;left:10px;right:10px;bottom:-1px;height:2px;
-    background:var(--ac);border-radius:2px 2px 0 0;box-shadow:0 0 10px var(--ac-line);
-    transition:background var(--slow) var(--ease);}
-  .tab .b{margin-left:var(--sp1);padding:2px 7px;border-radius:99px;font-size:var(--f0);
+  .tab:hover{color:var(--fg2);background:rgba(255,255,255,.04);}
+  .tab.on{color:var(--fg);background:var(--ac-dim);border-left-color:var(--ac);}
+  .tab .b{margin-left:auto;padding:2px 7px;border-radius:99px;font-size:var(--f0);
     font-weight:700;background:var(--ac);color:var(--ink);}
 
   /* panels fade+rise on activation */
@@ -531,6 +533,15 @@
     .rail{position:static;max-height:none;}
     .cols{column-count:1;}
     .nav-grid{grid-template-columns:repeat(2,1fr);}
+    /* sidebar reverts to a horizontal wrapping tab row below this width */
+    .app-body{flex-direction:column;margin-top:var(--sp4);}
+    nav{flex-direction:row;flex-wrap:wrap;align-items:center;gap:2px;width:100%;
+      position:static;max-height:none;overflow:visible;margin-bottom:var(--sp4);
+      border-bottom:1px solid var(--line);padding-bottom:var(--sp2);}
+    .navgrp{display:none;}
+    .tab{width:auto;border-left:none;border-radius:var(--r1);}
+    .tab.on{box-shadow:inset 0 -2px 0 var(--ac);}
+    .qsearch{width:170px !important;margin-left:auto;margin-bottom:0;order:99;}
   }
   @media(max-width:580px){
     :root{--f5:14.5px;--f7:20px;--f8:40px;}
@@ -542,6 +553,7 @@
     nav{gap:0;}
     .tab{padding:11px 11px;font-size:var(--f1);}
     .nav-grid{grid-template-columns:1fr;}
+    .qsearch{width:100% !important;order:99;margin:var(--sp2) 0 0;}
   }
   @media(prefers-reduced-motion:reduce){
     *,*::before,*::after{animation:none !important;transition:none !important;}
@@ -586,19 +598,24 @@
     </div>
   </header>
 
+  <div class="app-body">
   <nav id="nav">
+    <input type="text" id="qSearch" class="qsearch" placeholder="Quick search… (Enter)" autocomplete="off">
     <button class="tab on" data-t="home" title="Overview and quick links">Home</button>
+    <div class="navgrp">Study</div>
     <button class="tab" data-t="course" title="Lessons across 4 domains">Course</button>
     <button class="tab" data-t="flash" title="Spaced-repetition flashcards">Cards<span class="b" id="bDue" hidden></span></button>
     <button class="tab" data-t="notes" title="Per-domain topic and trap reference">Notes</button>
     <button class="tab" data-t="drill" title="Practice questions, filtered your way">Drill<span class="b" id="bMiss" hidden></span></button>
+    <div class="navgrp">Assess</div>
     <button class="tab" data-t="exam" title="Full-length timed exam simulation">Exam Sim</button>
     <button class="tab" data-t="cram" title="One-page final review sheet">Cram</button>
+    <div class="navgrp">Reference</div>
     <button class="tab" data-t="search" title="Search every lesson, card, note and question">Search</button>
     <button class="tab" data-t="track" title="Pluralsight courses and labs tracker">Pluralsight</button>
     <button class="tab" data-t="plan" title="Readiness score and study plan">Plan</button>
-    <input type="text" id="qSearch" class="qsearch" placeholder="Quick search… (Enter)" autocomplete="off">
   </nav>
+  <div class="panels">
 
   <section class="panel on" id="p-home">
     <div class="box home-hero">
@@ -743,6 +760,9 @@
       <div class="hint" id="storageNote" style="margin-top:12px;"></div>
     </div>
   </section>
+
+  </div>
+  </div>
 
   <div id="wsReport" class="cram" style="display:none"></div>
 </div>
