@@ -552,8 +552,8 @@
   @media print{
     body::before{display:none;}
     body{background:#fff;color:#000;font-size:10.5pt;}
-    .hud,nav,.panel:not(#p-cram),.np{display:none !important;}
-    #p-cram{display:block !important;}
+    .hud,nav,.panel:not(.print-target),.np{display:none !important;}
+    .print-target{display:block !important;}
     .box{border:none;background:none;padding:0;box-shadow:none;}
     .cram h4{color:#000;border-bottom:1px solid #999;margin:14pt 0 6pt;}
     .cram .kv span,.cram .sq{color:#333;}
@@ -612,6 +612,10 @@
     </div>
     <div class="stats" id="hmStats" style="margin:var(--sp4) 0"></div>
     <button class="box" id="hmFocus" style="display:block;width:100%;text-align:left;cursor:pointer;margin-bottom:var(--sp4)"></button>
+    <div class="box" style="margin-bottom:var(--sp4)">
+      <h3 class="sect" style="margin-top:0">Today's session</h3>
+      <div id="hmToday"></div>
+    </div>
     <div class="nav-grid" id="hmGrid"></div>
   </section>
 
@@ -628,6 +632,7 @@
         <option value="shuffle">Shuffle all</option>
         <option value="unseen">Unseen only</option>
       </select>
+      <button class="btn gd sm" id="bRapid" title="Timed, shuffled run through every acronym card">Acronym rapid-fire</button>
       <span class="hint" id="fcProg" style="margin-left:auto;"></span>
     </div>
     <div class="box">
@@ -638,10 +643,12 @@
       </div>
       <div class="pips" id="pips"></div>
       <div class="row" style="margin-top:15px;">
-        <button class="btn no w" id="bNo">Missed it <span style="opacity:.55">1</span></button>
-        <button class="btn ok w" id="bYes">Got it <span style="opacity:.55">2</span></button>
+        <button class="btn no w" id="bNo">Again <span style="opacity:.55">1</span></button>
+        <button class="btn gd w" id="bHard">Hard <span style="opacity:.55">2</span></button>
+        <button class="btn ok w" id="bYes">Good <span style="opacity:.55">3</span></button>
+        <button class="btn ok w" id="bEasy">Easy <span style="opacity:.55">4</span></button>
       </div>
-      <div class="hint" style="margin-top:11px;">Space flips · 1 miss · 2 hit · intervals 1d / 3d / 7d / 14d / 30d</div>
+      <div class="hint" style="margin-top:11px;">Space flips · 1 again · 2 hard · 3 good · 4 easy · intervals 1d / 3d / 7d / 14d / 30d</div>
     </div>
   </section>
 
@@ -719,6 +726,10 @@
     <div class="box" id="objcov"></div>
     <h3 class="sect">Weak spots</h3>
     <div class="box" id="weak"></div>
+    <div class="row np" style="margin-top:11px">
+      <button class="btn gd sm" id="bPrintWeak">Print weak-spots report</button>
+      <span class="hint">Domain, objective and missed-question summary on one page.</span>
+    </div>
     <h3 class="sect">Activity</h3>
     <div class="box" id="act"></div>
     <h3 class="sect">Data</h3>
@@ -733,6 +744,7 @@
     </div>
   </section>
 
+  <div id="wsReport" class="cram" style="display:none"></div>
 </div>
 <script>
 /* ===================== DOMAINS ===================== */
@@ -8733,8 +8745,8 @@ const OBJECTIVES=[
 
 /* ===================== STATE ===================== */
 const K={fc:'secx:fc4',q:'secx:q4',exam:'secx:exam4',course:'secx:ps4',
-  date:'secx:date4',days:'secx:days4',lesson:'secx:lesson4'};
-let fcState={},qState={},examHistory=[],psProgress={},examDate=null,studyDays=[],lessonDone={};
+  date:'secx:date4',days:'secx:days4',lesson:'secx:lesson4',lrev:'secx:lrev4'};
+let fcState={},qState={},examHistory=[],psProgress={},examDate=null,studyDays=[],lessonDone={},lessonRev={};
 
 /* Storage adapter — detects its host environment at load:
    'artifact' = window.storage (inside Claude), 'local' = localStorage
@@ -8772,8 +8784,26 @@ async function loadAll(){
   fcState=await sGet(K.fc)||{}; qState=await sGet(K.q)||{};
   examHistory=await sGet(K.exam)||[]; psProgress=await sGet(K.course)||{};
   examDate=await sGet(K.date)||null; studyDays=await sGet(K.days)||[];
-  lessonDone=await sGet(K.lesson)||{};
+  lessonDone=await sGet(K.lesson)||{}; lessonRev=await sGet(K.lrev)||{};
 }
+/* Lessons never resurfaced once marked done — this puts them on the same
+   SRS ladder flashcards already use, driven off the same SRS_DAYS.
+   lessonDone stays a plain boolean everywhere else in the app; this is a
+   parallel, purely additive schedule so nothing existing has to change. */
+function lessonBox(id){return (lessonRev[id]&&lessonRev[id].box)||0;}
+function lessonReviewDue(id){
+  const r=lessonRev[id];
+  if(!lessonDone[id])return false;
+  if(!r)return true;
+  return (r.due||0)<=Date.now();
+}
+async function markLessonReviewed(id,rating){
+  const cur=lessonBox(id);
+  const nb=rating==='again'?0:Math.max(0,Math.min(5,cur+GRADE_DELTA[rating]));
+  lessonRev[id]={box:nb,due:Date.now()+SRS_DAYS[nb]*DAY,last:Date.now()};
+  await sSet(K.lrev,lessonRev);
+}
+function lessonsReviewDueCount(){return FLAT.filter(l=>lessonReviewDue(l.id)).length;}
 const todayKey=()=>new Date().toISOString().slice(0,10);
 async function markStudied(){
   const t=todayKey();
@@ -9030,6 +9060,22 @@ function renderLesson(){
   away.innerHTML='<span class="lbl">Takeaway</span><p>'+esc(L.away)+'</p>';
   host.appendChild(away);
 
+  /* --- spaced review for an already-completed, now-due lesson --- */
+  if(lessonDone[L.id]&&lessonReviewDue(L.id)){
+    const rv=document.createElement('div'); rv.className='qbox';
+    rv.innerHTML='<div class="hint" style="margin-bottom:9px">Due for review — how well did this come back to you?</div>'
+      +'<div class="row"><button class="btn no sm" id="lrAgain">Again</button>'
+      +'<button class="btn gd sm" id="lrHard">Hard</button>'
+      +'<button class="btn ok sm" id="lrGood">Good</button>'
+      +'<button class="btn ok sm" id="lrEasy">Easy</button></div>';
+    host.appendChild(rv);
+    ['Again','Hard','Good','Easy'].forEach(r=>{
+      document.getElementById('lr'+r).onclick=async()=>{
+        await markLessonReviewed(L.id,r.toLowerCase());renderCourse();
+      };
+    });
+  }
+
   /* --- inline check --- */
   if(L.check){
     const ttl=document.createElement('h3'); ttl.className='sect'; ttl.textContent='Check yourself';
@@ -9046,7 +9092,7 @@ function renderLesson(){
         if(!ok)cw.querySelectorAll('.opt')[L.check.a].classList.add('yes');
         ex.classList.add('on');
         if(ok&&!lessonDone[L.id]){lessonDone[L.id]=true;await sSet(K.lesson,lessonDone);
-          renderRail();updateHud();}
+          await markLessonReviewed(L.id,'good');renderRail();updateHud();}
         await markStudied();
       };
       cw.appendChild(b);
@@ -9108,11 +9154,16 @@ function paintFc(){
   const c=fcQ[fcI],info=dk(c.d);
   fcBody.textContent=fcFlip?c.b:c.f;
   fcFace.textContent=(fcFlip?'BACK · ':'FRONT · ')+info.short;
-  const dl=dueLabel(c.id);
-  fcDueEl.textContent=dl;
-  fcDueEl.style.color=dl==='DUE'?'var(--ac)':(dl==='NEW'?'var(--warn)':'var(--fg3)');
+  if(rapid.active){
+    fcDueEl.textContent=Math.round((Date.now()-rapid.start)/1000)+'s';
+    fcDueEl.style.color='var(--warn)';
+  }else{
+    const dl=dueLabel(c.id);
+    fcDueEl.textContent=dl;
+    fcDueEl.style.color=dl==='DUE'?'var(--ac)':(dl==='NEW'?'var(--warn)':'var(--fg3)');
+  }
   fcEl.classList.toggle('flip',fcFlip);
-  fcProg.textContent=(fcI+1)+' / '+fcQ.length;
+  fcProg.textContent=rapid.active?(rapid.count+1)+' / '+rapid.total+' · rapid-fire':(fcI+1)+' / '+fcQ.length;
   const b=boxOf(c.id);pipsEl.innerHTML='';
   for(let i=0;i<5;i++){const p=document.createElement('div');p.className='pip'+(i<b?' on':'');pipsEl.appendChild(p);}
   const lb=document.createElement('span');lb.className='pipl';
@@ -9120,24 +9171,65 @@ function paintFc(){
   pipsEl.appendChild(lb);
 }
 fcEl.onclick=()=>{fcFlip=!fcFlip;paintFc();};
-async function grade(ok){
+/* Timed, shuffled, no-filter pass through every acronym card. Reuses the
+   normal card UI and grade() — only the queue construction, progress
+   readout and end-of-run summary differ from a regular review session. */
+let rapid={active:false,start:0,count:0,total:0};
+function startRapid(){
+  fcQ=FLASHCARDS.filter(x=>x.d==='acr').slice().sort(()=>Math.random()-.5);
+  fcI=0;fcFlip=false;
+  rapid={active:true,start:Date.now(),count:0,total:fcQ.length};
+  document.getElementById('bRapid').textContent='End rapid-fire';
+  fcDeck.disabled=true;fcMode.disabled=true;
+  paintFc();
+}
+function endRapid(){
+  const secs=Math.max(1,Math.round((Date.now()-rapid.start)/1000));
+  const n=rapid.count;
+  rapid.active=false;
+  document.getElementById('bRapid').textContent='Acronym rapid-fire';
+  fcDeck.disabled=false;fcMode.disabled=false;
+  fcFace.textContent='RAPID FIRE · DONE';fcDueEl.textContent='';
+  fcBody.innerHTML=n
+    ?'<b>'+n+'</b> acronym'+(n===1?'':'s')+' in <b>'+secs+'s</b> — '+(secs/Math.max(1,n)).toFixed(1)+'s/card average.'
+    :'Ended with no cards graded.';
+  fcProg.textContent='';pipsEl.innerHTML='';
+  const resumeNormalFlip=()=>{fcFlip=!fcFlip;paintFc();};
+  fcEl.onclick=()=>{fcEl.onclick=resumeNormalFlip;buildFc();};
+}
+document.getElementById('bRapid').onclick=()=>{rapid.active?endRapid():startRapid();};
+/* rating: 'again' resets to box 0; 'hard' repeats the current box (no
+   promotion, same interval again); 'good' is the original single-button
+   promotion; 'easy' skips an extra box. All map onto the same SRS_DAYS
+   ladder — no new schedule, just finer-grained input into it. */
+const GRADE_DELTA={again:-99,hard:0,good:1,easy:2};
+async function grade(rating){
   if(!fcQ.length)return;
-  const c=fcQ[fcI],nb=ok?Math.min(5,boxOf(c.id)+1):0;
+  const c=fcQ[fcI],cur=boxOf(c.id);
+  const nb=rating==='again'?0:Math.max(0,Math.min(5,cur+GRADE_DELTA[rating]));
   fcState[c.id]={box:nb,due:Date.now()+SRS_DAYS[nb]*DAY,last:Date.now()};
   await sSet(K.fc,fcState);await markStudied();
   fcFlip=false;
-  if(fcMode.value==='due'){fcQ.splice(fcI,1);if(fcI>=fcQ.length)fcI=0;}
+  if(rapid.active){
+    rapid.count++;
+    if(rapid.count>=rapid.total){endRapid();updateHud();return;}
+    fcI=(fcI+1)%fcQ.length;
+  }else if(fcMode.value==='due'){fcQ.splice(fcI,1);if(fcI>=fcQ.length)fcI=0;}
   else fcI=(fcI+1)%fcQ.length;
   paintFc();updateHud();
 }
-document.getElementById('bYes').onclick=()=>grade(true);
-document.getElementById('bNo').onclick=()=>grade(false);
+document.getElementById('bNo').onclick=()=>grade('again');
+document.getElementById('bHard').onclick=()=>grade('hard');
+document.getElementById('bYes').onclick=()=>grade('good');
+document.getElementById('bEasy').onclick=()=>grade('easy');
 document.addEventListener('keydown',e=>{
   if(!document.getElementById('p-flash').classList.contains('on'))return;
   if(['INPUT','SELECT','TEXTAREA'].includes(e.target.tagName))return;
   if(e.code==='Space'){e.preventDefault();fcFlip=!fcFlip;paintFc();}
-  if(e.key==='1')grade(false);
-  if(e.key==='2')grade(true);
+  if(e.key==='1')grade('again');
+  if(e.key==='2')grade('hard');
+  if(e.key==='3')grade('good');
+  if(e.key==='4')grade('easy');
 });
 document.addEventListener('keydown',e=>{
   const onDrill=document.getElementById('p-drill').classList.contains('on');
@@ -9414,6 +9506,14 @@ function syncDObj(){
 }
 syncDObj();
 let dQ=[],dI=0,dA=null,dLock=false,dSh=null,dSel=null;
+/* Bypasses the normal filter selects entirely and drills an explicit set
+   of question ids — used by "drill my misses" from exam results and the
+   Home "today's session" queue. */
+function drillIds(ids){
+  if(!ids.length)return;
+  dQ=QUESTIONS.filter(x=>ids.includes(x.id));dI=0;loadDrill();
+  goTab('drill');
+}
 function buildDrill(){
   let q=QUESTIONS.filter(x=>dDeck.value==='all'||x.d===dDeck.value);
   if(dObj.value!=='all')q=q.filter(x=>x.o===dObj.value);
@@ -9652,11 +9752,17 @@ function eResults(score,pct,by,byT){
     +'<div class="row" style="justify-content:center;margin-top:17px">'
     +'<button class="btn gd sm" id="eRevAll">Review all</button>'
     +'<button class="btn gd sm" id="eRevMiss">Review misses only</button>'
+    +(score<ex.qs.length?'<button class="btn no sm" id="eDrillMiss">Drill my misses →</button>':'')
     +'<button class="btn pri sm" id="eAgain">New exam</button></div></div>'
     +'<div id="eRev" style="margin-top:9px"></div>';
   document.getElementById('eAgain').onclick=eIdle;
   document.getElementById('eRevAll').onclick=()=>eReview(false);
   document.getElementById('eRevMiss').onclick=()=>eReview(true);
+  const dm=document.getElementById('eDrillMiss');
+  if(dm)dm.onclick=()=>{
+    const missIds=ex.qs.filter((q,i)=>!isCorrect(q,ex.ans[i])).map(q=>q.id);
+    drillIds(missIds);
+  };
   eReview(true);
 }
 function eReview(missOnly){
@@ -9704,7 +9810,12 @@ function renderCram(){
   h+='</div>';
   b.innerHTML=h;
 }
-document.getElementById('bPrint').onclick=()=>window.print();
+function printOnly(el){
+  el.classList.add('print-target');
+  window.print();
+  el.classList.remove('print-target');
+}
+document.getElementById('bPrint').onclick=()=>printOnly(document.getElementById('p-cram'));
 
 /* ===================== SEARCH ===================== */
 const sIn=document.getElementById('sIn'),sBox=document.getElementById('sBox'),sCount=document.getElementById('sCount');
@@ -9907,6 +10018,28 @@ function renderHome(){
     +'<span style="font-size:var(--f7);font-weight:700;color:'+weakest.color+'">'+weakest.short+'</span>'
     +'<span class="hint">'+esc(weakest.name)+' is your lowest-scoring domain at '+wp+'% — the highest-leverage place to study next.</span></div>';
   focus.onclick=()=>{curDomView=weakest.id;curId=null;renderCourse();goTab('course');};
+
+  const dueQ=QUESTIONS.filter(q=>qNeedsWork(q)).length;
+  const lrDue=lessonsReviewDueCount();
+  const steps=[
+    {n:dc,label:dc===1?'flashcard due':'flashcards due',empty:'No cards due right now.',
+      go:()=>{fcMode.value='due';buildFc();goTab('flash');}},
+    {n:dueQ,label:dueQ===1?'question due for review':'questions due for review',empty:'No questions due right now.',
+      go:()=>{dDeck.value='all';dObj.value='all';dType.value='all';dFilt.value='due';buildDrill();goTab('drill');}},
+    lrDue
+      ? {n:lrDue,label:lrDue===1?'lesson due for review':'lessons due for review',empty:'',
+          go:()=>{const l=FLAT.find(x=>lessonReviewDue(x.id));if(l){curId=l.id;curDomView=null;renderCourse();}goTab('course');}}
+      : {n:L?1:0,label:L?'lesson to continue: '+L.t:'',empty:'Every lesson is complete.',
+          go:()=>goTab('course')},
+  ];
+  document.getElementById('hmToday').innerHTML=steps.map((s,i)=>
+    '<div class="crow"><span class="t">'+(i+1)+'. '+(s.n?'<b>'+s.n+'</b> '+esc(s.label):esc(s.empty))+'</span>'
+    +(s.n?'<button class="btn sm pri" data-step="'+i+'">Go →</button>':'')+'</div>'
+  ).join('');
+  document.getElementById('hmToday').querySelectorAll('[data-step]').forEach(b=>{
+    b.onclick=()=>steps[Number(b.dataset.step)].go();
+  });
+
   document.getElementById('hmGrid').innerHTML=NAV_CARDS.map(c=>
     '<button class="nav-card" data-go="'+c.t+'"><div class="ic">'+c.ic+'</div><div class="n">'+c.n+'</div>'
     +'<div class="d">'+c.d+'</div>'+(c.v()?'<div class="v">'+c.v()+'</div>':'')+'</button>'
@@ -10071,7 +10204,26 @@ function renderPlan(){
   a+='</div><div class="hint" style="margin-top:11px">'+studyDays.length
     +' total study day(s) · current streak '+streak()+'</div>';
   document.getElementById('act').innerHTML=a;
+
+  renderWeakReport(wd,weakest,missed,guessed);
 }
+/* One-page take-anywhere summary: weakest domain, thinnest objectives,
+   and outstanding missed/guessed questions. Kept in sync every time Plan
+   renders; only shown to print via .print-target (see bPrintWeak). */
+function renderWeakReport(wd,weakObjs,missed,guessed){
+  let h='<h4>Weak-spot report — '+new Date().toLocaleDateString()+'</h4>';
+  h+='<div class="sq"><b>Weakest domain:</b> '+esc(wd.name)+' at '+Math.round(domainScore(wd.id)*100)
+    +'% ('+wd.weight+'% of the exam)</div>';
+  h+='<h4>Thinnest objective coverage</h4>';
+  weakObjs.forEach(o=>h+='<div class="kv"><b>'+o.id+'</b><span>'+esc(o.t)+' — '+Math.round(100*o.cov/o.sub)+'%</span></div>');
+  h+='<h4>Outstanding missed / guessed questions ('+(missed.length+guessed.length)+')</h4>';
+  if(missed.length||guessed.length){
+    [...missed,...guessed].forEach(q=>{const d=D(q.d);
+      h+='<div class="sq">• ['+d.short+'] '+esc(q.q)+'</div>';});
+  }else h+='<div class="sq">None outstanding.</div>';
+  document.getElementById('wsReport').innerHTML=h;
+}
+document.getElementById('bPrintWeak').onclick=()=>printOnly(document.getElementById('wsReport'));
 document.getElementById('storageNote').innerHTML='Progress is saved to: <b>'+BACKEND_LABEL+'</b>. '
   +'Export carries progress between environments \u2014 e.g. from Claude to a self-hosted copy.';
 document.getElementById('bImport').onclick=()=>document.getElementById('fImport').click();
