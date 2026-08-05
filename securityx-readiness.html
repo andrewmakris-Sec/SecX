@@ -10027,8 +10027,8 @@ function renderHome(){
     {n:dueQ,label:dueQ===1?'question due for review':'questions due for review',empty:'No questions due right now.',
       go:()=>{dDeck.value='all';dObj.value='all';dType.value='all';dFilt.value='due';buildDrill();goTab('drill');}},
     lrDue
-      ? {n:lrDue,label:lrDue===1?'lesson due for review':'lessons due for review',empty:'',
-          go:()=>{const l=FLAT.find(x=>lessonReviewDue(x.id));if(l){curId=l.id;curDomView=null;renderCourse();}goTab('course');}}
+      ? {n:lrDue,label:lrDue===1?'lesson due for review: '+FLAT.find(x=>lessonReviewDue(x.id)).t:'lessons due for review',
+          empty:'',go:()=>{const l=FLAT.find(x=>lessonReviewDue(x.id));if(l){curId=l.id;curDomView=null;renderCourse();}goTab('course');}}
       : {n:L?1:0,label:L?'lesson to continue: '+L.t:'',empty:'Every lesson is complete.',
           go:()=>goTab('course')},
   ];
