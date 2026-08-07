@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>SECX READINESS</title>
-<meta name="description" content="A self-contained study tool for the CompTIA SecurityX (CAS-005) exam: 129 lessons, 571 flashcards, 482 practice questions, and a full-length exam simulator. Runs entirely offline.">
+<meta name="description" content="A self-contained study tool for the CompTIA SecurityX (CAS-005) exam: 129 lessons, 571 flashcards, 494 practice questions, and a full-length exam simulator. Runs entirely offline.">
 <meta name="robots" content="noindex, nofollow">
 <meta property="og:title" content="SecX // Readiness">
 <meta property="og:description" content="Offline CompTIA SecurityX (CAS-005) exam prep — lessons, flashcards, question drills, and exam simulation in one file.">
@@ -9017,6 +9017,115 @@ QUESTIONS.push(
    'Apply current patches and verify the EDR agent is installed and reporting','Join the domain/identity provider using a scoped provisioning credential',
    'Place the device on a restricted provisioning VLAN until posture is confirmed','Move to the standard production VLAN once compliance checks pass'],
   e:'A vendor image is not a trustworthy starting point because its history cannot be proven, so re-imaging from a controlled golden image comes first. MDM enrolment establishes the policy baseline before any other software changes are trusted, and verifying EDR/patches confirms the device can actually be monitored going forward. A scoped provisioning credential limits blast radius if provisioning itself is compromised, a restricted VLAN keeps an unverified device away from production, and only a passing compliance check earns full network access.'}
+);
+
+/* ---- PBQ expansion round 2: same under-represented cells, further topics ---- */
+QUESTIONS.push(
+ {id:'pbq14',d:'arch',o:'2.2',type:'order',q:'Order these secure SDLC gates from design through end of life.',
+  items:['Threat modeling during design','Static analysis (SAST) on committed source','Software composition analysis (SCA) against third-party dependencies',
+   'Dynamic/interactive analysis (DAST/IAST) against a running build','Fuzzing and manual penetration testing before release',
+   'Runtime protection (RASP) and monitoring in production','Secure decommissioning and data sanitisation at end of life'],
+  e:'Threat modeling has to come first because it tells the rest of the pipeline where to focus. Static analysis and SCA run against the code itself, before anything executes; dynamic testing needs a running build, so it comes after. Fuzzing and pentest are the last gate before release, RASP and monitoring cover the (much longer) production lifetime, and decommissioning — the stage most teams forget — is what actually closes the lifecycle out.'},
+ {id:'pbq15',d:'arch',o:'2.5',type:'order',q:'Order the stages of a ring-based canary rollout with auto-rollback.',
+  items:['Deploy the new version to an internal/canary ring only','Compare authentication-failure rate and anomaly signals against baseline for that ring',
+   'Promote to a wider pilot ring if signals stay within threshold','Continue monitoring the pilot ring under real user load',
+   'Roll out to the full production ring once the pilot holds steady','Automatically roll back any ring that trips the anomaly threshold, at whichever stage it happens'],
+  e:'The canary ring exists to catch a bad release against the smallest possible blast radius, so it goes first and is watched before anything wider ships. Promotion at each stage is conditional on the previous ring staying clean, not on a fixed timer. Auto-rollback is not a separate final step — it can and should trigger at any ring the moment the threshold trips, which is why it is the control that makes the whole pattern a security mechanism rather than just a release strategy.'},
+ {id:'pbq16',d:'arch',o:'2.4',type:'defect',q:'Review this just-in-time privileged elevation policy for production database admin access. Flag every defect.',
+  art:{fn:'jit-policy.txt',kd:'JIT elevation policy review'},
+  lines:[
+   {c:'Policy: just-in-time elevation to production database admin'},
+   {c:'Approval: auto-approved if the requester’s manager has not responded within 15 minutes',bad:true},
+   {c:'Elevation duration: valid for 8 hours once granted',bad:true},
+   {c:'MFA required at the elevation request: yes'},
+   {c:'Logging: all elevated actions logged to the SIEM'},
+   {c:'Revocation: expires automatically at 8 hours, no early manual revoke available',bad:true},
+  ],
+  e:'Three defects. Auto-approving on a timeout defeats the point of requiring approval at all — a non-response is not a yes. An 8-hour grant is not just-in-time, it is a standing elevated session for most of a shift; JIT access should be scoped to the task, typically minutes to a couple of hours. And with no early-revoke path, a session cannot be cut short even if the task finishes early or something looks wrong. MFA at request and full action logging are both correct controls.'},
+ {id:'pbq17',d:'arch',o:'2.5',type:'defect',q:'Review this cross-account IAM role trust policy. Flag every defect.',
+  art:{fn:'trust-policy.json',kd:'cross-account role trust policy review'},
+  lines:[
+   {c:'Role: CrossAccountReadOnly'},
+   {c:'Trust policy Principal: arn:aws:iam::*:root',bad:true},
+   {c:'External ID condition on AssumeRole: not specified',bad:true},
+   {c:'MFA condition on AssumeRole: not required',bad:true},
+   {c:'Session duration: 12 hours (the maximum allowed)',bad:true},
+   {c:'Permissions attached: ReadOnlyAccess (AWS managed policy)'},
+  ],
+  e:'Four defects. A wildcard account principal lets any AWS account in existence attempt to assume the role, not just the intended partner account; with no external ID condition there is nothing to stop the classic confused-deputy assumption from a third party who learned the role ARN; no MFA requirement means a leaked credential alone is enough; and a 12-hour session for a read-only cross-account role is far longer than the access pattern needs. The attached permission set itself — read-only — is appropriately scoped.'},
+ {id:'pbq18',d:'grc',o:'1.2',type:'build',
+  ctx:{fn:'bia.txt',kd:'Business Impact Analysis workflow',lines:['New critical order-processing system going live next quarter.']},
+  q:'Order the Business Impact Analysis steps from first activity to final output.',
+  items:['Identify and inventory business processes and their supporting systems','Determine the impact of an outage on each process as time passes',
+   'Assign RTO and RPO to each process based on that impact','Identify the minimum resources required to resume each process within its MTD',
+   'Prioritise recovery order across processes based on criticality','Feed the results into the disaster recovery and continuity plans'],
+  e:'You cannot assess impact on a process you have not first inventoried, and RTO/RPO targets only mean something once the impact-over-time curve is understood. Minimum-resource identification and cross-process prioritisation are what make the targets actionable rather than aspirational, and the whole analysis exists to feed the DR/continuity plans — it is an input to them, not a parallel document.'},
+ {id:'pbq19',d:'grc',o:'1.3',type:'build',
+  ctx:{fn:'gap-assessment.txt',kd:'compliance gap assessment — new regulatory requirement',lines:['New regulation requires incident reporting within 24 hours of detection.']},
+  q:'Order the gap assessment process from receiving the new requirement to a tracked remediation plan.',
+  items:['Map the new requirement to existing controls and processes','Identify where current capability falls short of the requirement',
+   'Document each gap with an owner and a target remediation date','Prioritise gaps by regulatory deadline and risk exposure',
+   'Track remediation to closure and re-test the affected control','Attest or report compliance status to the relevant authority'],
+  e:'Mapping the requirement to what already exists is what actually reveals the gaps — skipping straight to remediation risks fixing things that were already compliant. Every gap needs an owner and date before it can be prioritised meaningfully, and closure has to be re-tested, not just marked done, before any attestation is made — attesting to a control that was never re-verified is the finding auditors look for first.'},
+ {id:'pbq20',d:'grc',o:'1.1',type:'defect',q:'Review this control-exception approval record. Flag every defect.',
+  art:{fn:'exception-record.txt',kd:'control exception review'},
+  lines:[
+   {c:'Exception requested: disable MFA for a legacy scheduling system'},
+   {c:'Business justification recorded: yes'},
+   {c:'Compensating control specified: none',bad:true},
+   {c:'Expiration date: none set — approved indefinitely',bad:true},
+   {c:'Approved by: the requesting team lead only, no independent security sign-off',bad:true},
+   {c:'Exception logged in the risk/exception register: yes'},
+  ],
+  e:'Three defects. An exception with no compensating control just accepts the risk with nothing offsetting it; approving indefinitely turns a one-time exception into a permanent, un-reviewed gap; and letting the requester approve their own exception removes the independent check that exception processes exist for. Recording the justification and logging the exception in the register are both correct — the failure is in what was approved and by whom, not in whether it was tracked at all.'},
+ {id:'pbq21',d:'grc',o:'1.4',type:'defect',q:'Review this PASTA-based threat model write-up. Flag every defect.',
+  art:{fn:'pasta-model.txt',kd:'PASTA seven-stage review'},
+  lines:[
+   {c:'Stage 1 — Define objectives: business objectives captured'},
+   {c:'Stage 2 — Define technical scope: application and infrastructure scope captured'},
+   {c:'Stage 3 — Application decomposition: data flow diagram produced'},
+   {c:'Stage 4 — Threat analysis: threat intelligence feeds not consulted',bad:true},
+   {c:'Stage 5 — Vulnerability and weakness analysis: skipped, went straight to attack modeling',bad:true},
+   {c:'Stage 6 — Attack modeling: attack trees built from assumed rather than confirmed vulnerabilities',bad:true},
+   {c:'Stage 7 — Risk and impact analysis: impact tied back to the Stage 1 business objectives'},
+  ],
+  e:'Three defects, and they cascade. PASTA is risk-centric specifically because Stage 4 pulls in real threat intelligence rather than working from a generic checklist — skipping it removes the thing that makes PASTA different from a paper exercise. Skipping Stage 5 means Stage 6 has nothing confirmed to build attack trees from, so it modeled attacks against vulnerabilities that were never actually verified to exist. Stages 1–3 and 7 are done correctly, and the final risk analysis is only as good as the attack modeling feeding it.'},
+ {id:'pbq22',d:'ops',o:'4.3',type:'build',
+  ctx:{fn:'hunt-runbook.txt',kd:'structured hunt — credential-dumping technique',lines:['Hypothesis: an adversary is dumping LSASS memory to harvest credentials.']},
+  q:'Order this hunt from hypothesis to a documented, reusable outcome.',
+  items:['Map the hypothesis to the specific ATT&CK technique and its known procedure variants','Identify the data sources that would actually show this technique (EDR process/memory-access events)',
+   'Query across the full fleet and a dwell-time-appropriate window, not a single host','Baseline legitimate LSASS access (EDR/AV agents, backup tools) to separate signal from noise',
+   'Validate any hit against additional context before escalating it to an incident','Convert a confirmed, repeatable query into a standing detection rule'],
+  e:'Mapping to a specific technique focuses what would otherwise be an unbounded search. A single host or a short window misses lateral spread and the dwell time real intrusions run on, and without a baseline, every legitimate tool that touches LSASS becomes a false positive. Validating before escalating keeps an uncorroborated hit from becoming an incident prematurely, and converting the working query into a standing detection is exactly what moves a hunt program from ad hoc toward the automated end of the Hunting Maturity Model.'},
+ {id:'pbq23',d:'ops',o:'4.1',type:'build',
+  ctx:{fn:'detection-lifecycle.txt',kd:'new detection rule — idea to production',lines:['Proposed: detect anomalous service-account authentication outside business hours.']},
+  q:'Order the detection engineering lifecycle from idea to a live paging alert.',
+  items:['Define the specific behavior and the log source(s) that would show it','Write the detection logic and test it against historical data to confirm it fires on true positives',
+   'Tune thresholds against a baseline period to estimate the false-positive rate','Peer review the logic and its expected alert volume before enabling it',
+   'Deploy in monitoring-only/silent mode before it can page anyone','Promote to a paging alert once the false-positive rate is acceptable'],
+  e:'Logic has to be validated against real historical data before anyone tunes it, and tuning needs a baseline before peer review can judge whether the expected volume is reasonable. Silent deployment is the step teams skip — it is what actually proves the false-positive rate in production before the rule earns the right to page someone, rather than finding out the hard way at 3am.'},
+ {id:'pbq24',d:'eng',o:'3.1',type:'defect',q:'Review this Active Directory service account and delegation configuration. Flag every defect.',
+  art:{fn:'ad-delegation.txt',kd:'Kerberos delegation review — svc-webapp'},
+  lines:[
+   {c:'Service account: svc-webapp'},
+   {c:'msDS-AllowedToDelegateTo: * (any service principal name)',bad:true},
+   {c:'TRUSTED_FOR_DELEGATION flag: set, and this account also holds Domain Admin rights',bad:true},
+   {c:'Kerberos pre-authentication: required'},
+   {c:'Password policy: set to never expire, last rotated three years ago',bad:true},
+   {c:'SPN registered: HTTP/webapp.corp.local'},
+  ],
+  e:'Three defects. Unconstrained delegation to any SPN means anything that can trick this account into authenticating can then impersonate the requesting user to whatever service it chooses — constraining the delegation target is the actual control. Combining that with Domain Admin rights on the same account turns a compromised web service into a domain-wide escalation path, which is a well-known real-world attack chain. And a password that has never rotated in three years has had three years for any leak to remain useful. Requiring Kerberos pre-authentication is correct and unrelated to these issues.'},
+ {id:'pbq25',d:'eng',o:'3.4',type:'defect',q:'Review this HSM key-management policy for a payment-signing key. Flag every defect.',
+  art:{fn:'hsm-key-policy.txt',kd:'HSM key policy review'},
+  lines:[
+   {c:'Key: payment-signing-key, generated inside the HSM, non-exportable in plaintext'},
+   {c:'Backup method: wrapped export under a separate backup-HSM key, plaintext never leaves the HSM boundary'},
+   {c:'Access control: any application in the payments VPC may request signing operations',bad:true},
+   {c:'Key-usage logging: enabled, every signing operation logged'},
+   {c:'Rotation policy: none defined — key has never been rotated since creation',bad:true},
+   {c:'Dual control on key rotation or destruction: not required — a single administrator can act alone',bad:true},
+  ],
+  e:'Three defects. Scoping signing access to an entire VPC rather than a specific service identity means any compromised workload in that network segment can sign payment data, not just the one service that should. No rotation policy leaves a single key material in use indefinitely, with no bound on how long a future compromise stays useful. And allowing one administrator to rotate or destroy the key alone removes the dual-control expectation for an action with no undo. Non-exportable generation, wrapped backup, and full usage logging are all correctly implemented.'}
 );
 
 /* ---- obj 3.5 gap-closure: named specialized-device categories ---- */
