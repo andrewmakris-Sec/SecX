@@ -10430,6 +10430,14 @@ function objAcc(objId){
   return at?Math.max(0,co)/at:null;
 }
 function objQCount(objId){return QUESTIONS.filter(x=>x.o===objId).length;}
+/* Modules are named "<topic> (obj X.X)" by convention wherever a module maps
+   cleanly onto one CAS-005 objective. This counts real, current lessons —
+   unlike OBJECTIVES[x].cov (a fixed snapshot from the original PDF term-match,
+   never recomputed as lessons/questions are added), this is exact right now. */
+function objLessonCount(objId){
+  const tag='(obj '+objId+')';
+  return FLAT.filter(l=>l.mod.includes(tag)).length;
+}
 function lessonRatio(dom){
   const ls=lessonsIn(dom);if(!ls.length)return 0;
   return ls.filter(l=>lessonDone[l.id]).length/ls.length;
@@ -10656,29 +10664,32 @@ function renderPlan(){
   document.getElementById('roadmap').innerHTML=rm;
 
   // ---- objective coverage ----
-  const totSub=OBJECTIVES.reduce((a,o)=>a+o.sub,0);
-  const totCov=OBJECTIVES.reduce((a,o)=>a+o.cov,0);
-  let oc='<div class="hint" style="margin-bottom:13px">Measured against the 23 objectives in CompTIA\u2019s '
-    +'published CAS-005 objectives document. <b>'+Math.round(100*totCov/totSub)+'%</b> of '+totSub
-    +' sub-topics are addressed by this tool\u2019s lessons, cards and questions. Anything below '
-    +'<b>50%</b> is flagged \u2014 study those from other material as well.</div>';
+  // o.cov/o.sub is a FIXED snapshot from one term-matching pass against the official
+  // CAS-005 objectives PDF, done once and never rerun \u2014 it does not move as lessons or
+  // questions are added. objLessonCount/objQCount below are computed live from the actual
+  // data, so they are the trustworthy signal for "how much is actually here right now."
+  let oc='<div class="hint" style="margin-bottom:13px">The <b>%</b> bars below are a fixed baseline from '
+    +'one past term-matching pass against CompTIA\u2019s published CAS-005 objectives document \u2014 '
+    +'they are <b>not recalculated</b> as content is added, so treat them as a rough starting map, not '
+    +'a live score. The lesson/question counts under each bar are real and current.</div>';
   DOMAINS.forEach(dd=>{
     const os=OBJECTIVES.filter(o=>o.d===dd.id);
     oc+='<div class="hint" style="margin:14px 0 6px;color:'+dd.color+'">'+dd.short+' \u00b7 '+dd.weight+'% of exam</div>';
     os.forEach(o=>{
       const pct=Math.round(100*o.cov/o.sub);
-      const col=pct>=70?'var(--ok)':(pct>=50?'var(--warn)':'var(--no)');
-      const acc=objAcc(o.id),n=objQCount(o.id);
+      const acc=objAcc(o.id),n=objQCount(o.id),lc=objLessonCount(o.id);
       oc+='<div class="brow"><span class="l" style="font-size:10.5px">'+o.id+' '+esc(o.t.slice(0,30))+'</span>'
-        +'<span class="t"><i style="width:'+pct+'%;background:'+col+'"></i></span>'
-        +'<span class="v" style="color:'+col+'">'+pct+'%</span></div>'
-        +'<div class="hint" style="margin:-2px 0 9px 152px">'+n+' question(s) tagged'
-        +(acc==null?'':' · '+Math.round(acc*100)+'% accuracy so far')+'</div>';
+        +'<span class="t"><i style="width:'+pct+'%;background:var(--fg4)"></i></span>'
+        +'<span class="v" style="color:var(--fg3)">'+pct+'% baseline</span></div>'
+        +'<div class="hint" style="margin:-2px 0 9px 152px">'+lc+' lesson(s) \u00b7 '+n+' question(s) tagged'
+        +(acc==null?'':' \u00b7 '+Math.round(acc*100)+'% accuracy so far')+'</div>';
     });
   });
-  const weakest=OBJECTIVES.slice().sort((a,b)=>(a.cov/a.sub)-(b.cov/b.sub)).slice(0,5);
-  oc+='<div class="hint" style="margin-top:16px"><b>Thinnest coverage \u2014 supplement these:</b><br>'
-    +weakest.map(o=>'\u2022 '+o.id+' '+esc(o.t)+' ('+Math.round(100*o.cov/o.sub)+'%)').join('<br>')+'</div>';
+  const signal=o=>objLessonCount(o.id)+objQCount(o.id);
+  const weakest=OBJECTIVES.slice().sort((a,b)=>signal(a)-signal(b)).slice(0,5);
+  oc+='<div class="hint" style="margin-top:16px"><b>Fewest lessons/questions in this tool right now:</b><br>'
+    +weakest.map(o=>'\u2022 '+o.id+' '+esc(o.t)+' \u2014 '+objLessonCount(o.id)+' lesson(s), '+objQCount(o.id)+' question(s)').join('<br>')
+    +'<br><span style="opacity:.75">Ranked by actual content in this tool, not the baseline % above \u2014 those two can disagree once content is added after the baseline was taken.</span></div>';
   document.getElementById('objcov').innerHTML=oc;
 
   const missed=QUESTIONS.filter(q=>qState[q.id]&&qState[q.id].missed);
@@ -10718,8 +10729,8 @@ function renderWeakReport(wd,weakObjs,missed,guessed){
   let h='<h4>Weak-spot report — '+new Date().toLocaleDateString()+'</h4>';
   h+='<div class="sq"><b>Weakest domain:</b> '+esc(wd.name)+' at '+Math.round(domainScore(wd.id)*100)
     +'% ('+wd.weight+'% of the exam)</div>';
-  h+='<h4>Thinnest objective coverage</h4>';
-  weakObjs.forEach(o=>h+='<div class="kv"><b>'+o.id+'</b><span>'+esc(o.t)+' — '+Math.round(100*o.cov/o.sub)+'%</span></div>');
+  h+='<h4>Fewest lessons/questions in this tool</h4>';
+  weakObjs.forEach(o=>h+='<div class="kv"><b>'+o.id+'</b><span>'+esc(o.t)+' — '+objLessonCount(o.id)+' lesson(s), '+objQCount(o.id)+' question(s)</span></div>');
   h+='<h4>Outstanding missed / guessed questions ('+(missed.length+guessed.length)+')</h4>';
   if(missed.length||guessed.length){
     [...missed,...guessed].forEach(q=>{const d=D(q.d);
