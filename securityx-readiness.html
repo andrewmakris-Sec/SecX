@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>SECX READINESS</title>
-<meta name="description" content="A self-contained study tool for the CompTIA SecurityX (CAS-005) exam: 129 lessons, 571 flashcards, 469 practice questions, and a full-length exam simulator. Runs entirely offline.">
+<meta name="description" content="A self-contained study tool for the CompTIA SecurityX (CAS-005) exam: 129 lessons, 571 flashcards, 494 practice questions, and a full-length exam simulator. Runs entirely offline.">
 <meta name="robots" content="noindex, nofollow">
 <meta property="og:title" content="SecX // Readiness">
 <meta property="og:description" content="Offline CompTIA SecurityX (CAS-005) exam prep — lessons, flashcards, question drills, and exam simulation in one file.">
@@ -2870,6 +2870,13 @@ const CRAM = {
     'Hash verification, not the custody form, proves image integrity.',
     'Compensating controls must be documented AND approved.',
     'Zero Trust ignores network location as a trust signal.',
+  ],
+  examDay:[
+    'Up to 90 questions, 165 minutes, Pearson VUE (test center or OnVUE at home). Pass/fail only — no scaled score, no domain breakdown.',
+    'PBQs (drag-and-drop, click, sometimes a live VM/lab task with real credentials) are reported clustered early — often within the first ~30 questions. A slow start does not mean the rest will be equally slow.',
+    'A PBQ eating disproportionate time is not worth stalling over — flag it, take your best answer, and move on. Multiple passing candidates report skipping the simulation-style item entirely.',
+    'No result is shown at the end of the exam — check your Pearson VUE exam history rather than waiting on a notification email. Turnaround has ranged from minutes to multiple days in reported cases.',
+    'This app’s 75% pass line and per-domain breakdown are self-imposed study aids — CompTIA publishes neither a passing score nor a score report.',
   ],
 };
 
@@ -8906,6 +8913,221 @@ QUESTIONS.push(
   e:'Authorization has to be proven before the CA will look at a CSR: order first, then prove control via a challenge, then finalize with the CSR only after validation succeeds. Submitting the CSR earlier would ask the CA to sign for a domain it has not yet verified.'}
 );
 
+/* ---- PBQ expansion: more order/match/defect/build across under-represented domain/type cells ---- */
+QUESTIONS.push(
+ {id:'pbq1',d:'arch',o:'2.4',type:'order',q:'Order the OAuth 2.0 Authorization Code flow with PKCE, from a public client’s first step to token receipt.',
+  items:['Client generates a code verifier and derives a code_challenge from it','Client redirects the user to the authorization server, sending the code_challenge',
+   'User authenticates and approves the requested scope','Authorization server redirects back to the client with an authorization code',
+   'Client sends the code and the original code_verifier to the token endpoint','Authorization server checks the verifier against the stored challenge before issuing tokens'],
+  e:'PKCE exists to bind the code exchange to the client that started the flow. The challenge is committed up front, the code is issued mid-flow, and the verifier is only checked at the very end — an attacker who intercepts the authorization code cannot redeem it without the verifier, which never left the original client.'},
+ {id:'pbq2',d:'arch',o:'2.6',type:'order',q:'Order the steps a Zero Trust deployment takes when a request arrives, per the NIST 800-207 PEP/PDP model.',
+  items:['Subject and device present a request to the Policy Enforcement Point','PEP forwards the request context to the Policy Decision Point',
+   'PDP queries policy, identity, and signal sources to evaluate trust','PDP returns an allow, deny, or step-up decision to the PEP',
+   'PEP enforces the decision and establishes or refuses the session','The session is continuously re-evaluated against new signals, not trusted for its full duration'],
+  e:'PEP and PDP are deliberately separate: the PEP never decides on its own, it only enforces what the PDP returns after consulting policy and signal sources. The last step is the one people skip when reasoning about Zero Trust — a granted session is not a standing grant, it is re-evaluated as new signals arrive.'},
+ {id:'pbq3',d:'arch',o:'2.1',type:'build',
+  ctx:{fn:'failover-runbook.txt',kd:'DR failover — primary region degraded',lines:['Trigger: primary region health check failing for 5 consecutive minutes.']},
+  q:'Order the failover steps so data integrity is protected and traffic only moves once the standby is verified ready.',
+  items:['Confirm the primary failure against a second, independent health signal','Freeze writes to the primary to prevent split-brain divergence',
+   'Promote the standby replica and verify replication lag is zero','Update DNS/load-balancer routing to point at the promoted standby',
+   'Verify application health checks pass against the new primary','Resume writes and monitor for replication catch-up errors'],
+  e:'A single flaky health check is not enough to justify a failover, so it is corroborated first. Writes are frozen before promotion so the primary cannot keep diverging from a standby that is about to become authoritative. Traffic only moves after the new primary proves healthy — cutting over first and checking second risks routing users to a standby that is not actually ready.'},
+ {id:'pbq4',d:'grc',o:'1.2',type:'defect',q:'Review this third-party risk summary for a vendor that processes card data on the organization’s behalf. Flag every defect.',
+  art:{fn:'vendor-risk-summary.txt',kd:'third-party risk review'},
+  lines:[
+   {c:'Vendor: PayFlow Processing — processes card data on our behalf'},
+   {c:'Assurance basis: vendor-completed questionnaire, unsigned, not independently verified',bad:true},
+   {c:'SOC 2 Type II report: requested, but not made a condition of onboarding',bad:true},
+   {c:'Data flow diagram showing where cardholder data traverses vendor systems: not requested',bad:true},
+   {c:'Contract right-to-audit clause: absent',bad:true},
+   {c:'Reassessment cadence: annual, calendar-triggered'},
+  ],
+  e:'Four defects. An unsigned self-questionnaire is the lowest assurance level and should never be the sole basis for approving a card-data vendor; requesting SOC 2 but not requiring it means it can simply be skipped; without a data flow diagram there is no way to state where cardholder data actually goes; and no audit right leaves every other claim here unverifiable later. A fixed annual reassessment cadence is correct practice.'},
+ {id:'pbq5',d:'grc',o:'1.4',type:'defect',q:'Review this STRIDE threat model for a checkout flow. Flag every defect.',
+  art:{fn:'threat-model.txt',kd:'STRIDE review — checkout service'},
+  lines:[
+   {c:'Data flow: Browser -> API Gateway -> Order Service -> Payment DB'},
+   {c:'Trust boundaries drawn on the diagram: none identified',bad:true},
+   {c:'Threats identified: Tampering (SQLi), Information Disclosure (unencrypted DB)'},
+   {c:'Repudiation: not considered — no logging requirement noted',bad:true},
+   {c:'Elevation of Privilege: not assessed for the admin console entry point',bad:true},
+   {c:'Mitigations: parameterised queries, TLS in transit'},
+   {c:'Model reviewed by: the single engineer who wrote it, no independent review',bad:true},
+  ],
+  e:'Four defects. STRIDE is elicited per trust-boundary crossing, so a model with no boundaries drawn has skipped the step that generates most of its threats; Repudiation was never considered, leaving no logging requirement to defend against denial of an action; the admin console is a real entry point that was never assessed for privilege escalation; and a threat model with no independent review carries the blind spots of one author. The identified threats and their mitigations are correctly matched.'},
+ {id:'pbq6',d:'grc',o:'1.1',type:'build',
+  ctx:{fn:'governance-stack.txt',kd:'policy hierarchy — most authoritative to most actionable',lines:['A new encryption requirement is being formalised.']},
+  q:'Order these governance artifacts from the highest-level mandate down to the most specific, actionable step.',
+  items:['Policy — data must be encrypted at rest and in transit','Standard — AES-256-GCM is the approved algorithm for data at rest',
+   'Procedure — the steps to enable encryption on a new database instance','Guideline — a recommended key-rotation interval for non-regulated data'],
+  e:'Policy states the mandate; a standard fixes the specific, mandatory technical requirement beneath it; a procedure operationalises that requirement into repeatable steps; a guideline is recommended rather than mandatory, which is why it sits last. Confusing standard with guideline is the usual exam trap — only one of them is optional.'},
+ {id:'pbq7',d:'grc',o:'1.5',type:'order',q:'Order the steps to vet a third-party AI model or vendor before approving it for production use.',
+  items:['Request the model card and any published evaluation results','Request evidence of training-data provenance and licensing',
+   'Assess what data the vendor would actually receive, and where it is processed and stored','Test the vendor’s stated safety claims directly rather than accepting them as written',
+   'Approve for production with monitoring and a defined exit/rollback plan'],
+  e:'A model card and provenance evidence are vendor self-disclosure, not verification, so testing the actual safety claims comes before approval, not instead of it. Data flow has to be understood before approval because it defines your real exposure. Approval always ships with monitoring and an exit plan — vetting once at onboarding is not a substitute for watching what the model actually does in production.'},
+ {id:'pbq8',d:'ops',o:'4.4',type:'build',
+  ctx:{fn:'evidence-log.txt',kd:'chain of custody — seized laptop, case #4471',lines:['Item: Dell Latitude laptop, serial ABC123, seized from Finance-3 workstation.']},
+  q:'Order these evidence-handling steps so custody remains defensible if this case goes to court.',
+  items:['Photograph the device in place before touching it','Record collector name, timestamp, and location on the custody form',
+   'Write-block the drive before imaging','Generate a cryptographic hash of the acquired image',
+   'Store the original in a sealed, access-logged evidence locker','Work exclusively from the verified image for all analysis'],
+  e:'Photographing in place documents the original state before any handling can change it, and the custody form has to start immediately, not after the fact. Write-blocking during imaging prevents the acquisition itself from modifying the source, and the hash is what proves the image still matches the original at every later comparison. The original then goes into sealed, logged storage and is never touched again — all analysis works from the verified image.'},
+ {id:'pbq9',d:'ops',o:'4.2',type:'build',
+  ctx:{fn:'vuln-ticket.txt',kd:'critical CVE remediation workflow',lines:['CVE-2025-XXXXX, CVSS 9.8, internet-facing service confirmed vulnerable.']},
+  q:'Order these remediation steps so the fix is verified, not just deployed.',
+  items:['Confirm exploitability against the actual configuration, not just the published CVSS score','Apply a compensating control (WAF rule / network ACL) if a patch is not immediately available',
+   'Deploy the vendor patch in a staged environment and validate no regression','Deploy to production during an approved change window',
+   'Rescan to confirm the finding no longer triggers','Close the ticket with rescan evidence attached, not the deployment confirmation alone'],
+  e:'CVSS alone can over- or understate real exposure for your specific configuration, so confirming exploitability comes first. A compensating control only buys time — it is not a substitute for the patch that follows it. Staging catches regressions before they reach production, and the rescan, not the deployment record, is what actually proves the vulnerability is gone; closing on deployment confirmation alone is a common audit finding.'},
+ {id:'pbq10',d:'ops',o:'4.1',type:'defect',q:'Review this SIEM correlation rule configuration. Flag every defect.',
+  art:{fn:'rule-config.txt',kd:'correlation rule review — brute force detection'},
+  lines:[
+   {c:'Rule: Brute Force — Failed Logins'},
+   {c:'Source: raw syslog forwarded from three redundant collectors'},
+   {c:'Deduplication: none applied before counting',bad:true},
+   {c:'Threshold: 5 failed logins in 5 minutes, same username, fires alert'},
+   {c:'Suppression: none — re-fires every 5 minutes while the condition holds',bad:true},
+   {c:'Enrichment: source IP resolved to ASN/geo before the alert is raised'},
+   {c:'Destination: alert routed to the on-call queue with no severity field set',bad:true},
+  ],
+  e:'Three defects. With no deduplication, triplicated forwarding turns 5 real attempts into 15 counted events, tripping the threshold three times faster than intended — duplication corrupts every count-based threshold. With no suppression, an incident that is already open keeps re-firing every five minutes instead of being aggregated until acknowledged. And an alert with no severity field breaks downstream triage and prioritisation. Resolving IP to ASN/geo before alerting is correct enrichment order.'},
+ {id:'pbq11',d:'ops',o:'4.3',type:'defect',q:'Review this hunt procedure write-up. Flag every defect.',
+  art:{fn:'hunt-procedure.txt',kd:'hunt review — LOLBin discovery activity'},
+  lines:[
+   {c:'Hypothesis: an adversary is using living-off-the-land binaries for discovery on domain controllers'},
+   {c:'Data source and window queried: EDR process telemetry, last 24 hours only',bad:true},
+   {c:'Baseline: none established — alerts on any occurrence of the binary',bad:true},
+   {c:'Scope: a single domain controller, not the DC fleet',bad:true},
+   {c:'Output: any hit is funnelled directly to incident declaration, no triage step',bad:true},
+   {c:'Follow-up: the working query is documented and retained for reuse'},
+  ],
+  e:'Four defects. A 24-hour window misses dwell time that commonly runs days to weeks; alerting on any occurrence of a dual-use binary with no baseline produces mostly noise, since the same binaries see legitimate use; scoping to one host misses lateral movement across the rest of the fleet; and skipping triage lets a single uncorroborated hit become an incident before it is verified — a lead is not a verdict. Retaining a working procedure for reuse is exactly what raises hunting maturity over time.'},
+ {id:'pbq12',d:'eng',o:'3.4',type:'build',
+  ctx:{fn:'attestation.txt',kd:'TPM remote attestation before releasing a disk-encryption key',lines:['Device requests its disk-encryption key from the key server on boot.']},
+  q:'Order the remote attestation steps that must succeed before the key is released.',
+  items:['TPM measures boot components into PCRs during startup','Device sends a signed quote of current PCR values to the attestation service',
+   'Attestation service verifies the quote signature against the TPM endorsement key','Service compares the PCR values against the expected known-good baseline',
+   'Key server releases the encryption key only if the comparison matches','Device unseals local storage using the released key'],
+  e:'Measurement happens during boot and cannot be requested after the fact. The quote must be signed so the OS cannot forge it, and verifying against the endorsement key proves the quote came from a genuine TPM. Comparing to a known-good baseline is the step that actually detects tampering — the key is the reward for passing that comparison, not a precondition for it, and unsealing storage only happens once the key already exists locally.'},
+ {id:'pbq13',d:'eng',o:'3.2',type:'build',
+  ctx:{fn:'provision.txt',kd:'new endpoint provisioning before it joins the corporate network',lines:['Fresh hardware, vendor OS image, about to be issued to a new hire.']},
+  q:'Order these steps so the endpoint is trustworthy before it ever reaches the production network.',
+  items:['Re-image from a known-good, organisation-controlled golden image','Enrol in MDM and enforce the baseline configuration policy',
+   'Apply current patches and verify the EDR agent is installed and reporting','Join the domain/identity provider using a scoped provisioning credential',
+   'Place the device on a restricted provisioning VLAN until posture is confirmed','Move to the standard production VLAN once compliance checks pass'],
+  e:'A vendor image is not a trustworthy starting point because its history cannot be proven, so re-imaging from a controlled golden image comes first. MDM enrolment establishes the policy baseline before any other software changes are trusted, and verifying EDR/patches confirms the device can actually be monitored going forward. A scoped provisioning credential limits blast radius if provisioning itself is compromised, a restricted VLAN keeps an unverified device away from production, and only a passing compliance check earns full network access.'}
+);
+
+/* ---- PBQ expansion round 2: same under-represented cells, further topics ---- */
+QUESTIONS.push(
+ {id:'pbq14',d:'arch',o:'2.2',type:'order',q:'Order these secure SDLC gates from design through end of life.',
+  items:['Threat modeling during design','Static analysis (SAST) on committed source','Software composition analysis (SCA) against third-party dependencies',
+   'Dynamic/interactive analysis (DAST/IAST) against a running build','Fuzzing and manual penetration testing before release',
+   'Runtime protection (RASP) and monitoring in production','Secure decommissioning and data sanitisation at end of life'],
+  e:'Threat modeling has to come first because it tells the rest of the pipeline where to focus. Static analysis and SCA run against the code itself, before anything executes; dynamic testing needs a running build, so it comes after. Fuzzing and pentest are the last gate before release, RASP and monitoring cover the (much longer) production lifetime, and decommissioning — the stage most teams forget — is what actually closes the lifecycle out.'},
+ {id:'pbq15',d:'arch',o:'2.5',type:'order',q:'Order the stages of a ring-based canary rollout with auto-rollback.',
+  items:['Deploy the new version to an internal/canary ring only','Compare authentication-failure rate and anomaly signals against baseline for that ring',
+   'Promote to a wider pilot ring if signals stay within threshold','Continue monitoring the pilot ring under real user load',
+   'Roll out to the full production ring once the pilot holds steady','Automatically roll back any ring that trips the anomaly threshold, at whichever stage it happens'],
+  e:'The canary ring exists to catch a bad release against the smallest possible blast radius, so it goes first and is watched before anything wider ships. Promotion at each stage is conditional on the previous ring staying clean, not on a fixed timer. Auto-rollback is not a separate final step — it can and should trigger at any ring the moment the threshold trips, which is why it is the control that makes the whole pattern a security mechanism rather than just a release strategy.'},
+ {id:'pbq16',d:'arch',o:'2.4',type:'defect',q:'Review this just-in-time privileged elevation policy for production database admin access. Flag every defect.',
+  art:{fn:'jit-policy.txt',kd:'JIT elevation policy review'},
+  lines:[
+   {c:'Policy: just-in-time elevation to production database admin'},
+   {c:'Approval: auto-approved if the requester’s manager has not responded within 15 minutes',bad:true},
+   {c:'Elevation duration: valid for 8 hours once granted',bad:true},
+   {c:'MFA required at the elevation request: yes'},
+   {c:'Logging: all elevated actions logged to the SIEM'},
+   {c:'Revocation: expires automatically at 8 hours, no early manual revoke available',bad:true},
+  ],
+  e:'Three defects. Auto-approving on a timeout defeats the point of requiring approval at all — a non-response is not a yes. An 8-hour grant is not just-in-time, it is a standing elevated session for most of a shift; JIT access should be scoped to the task, typically minutes to a couple of hours. And with no early-revoke path, a session cannot be cut short even if the task finishes early or something looks wrong. MFA at request and full action logging are both correct controls.'},
+ {id:'pbq17',d:'arch',o:'2.5',type:'defect',q:'Review this cross-account IAM role trust policy. Flag every defect.',
+  art:{fn:'trust-policy.json',kd:'cross-account role trust policy review'},
+  lines:[
+   {c:'Role: CrossAccountReadOnly'},
+   {c:'Trust policy Principal: arn:aws:iam::*:root',bad:true},
+   {c:'External ID condition on AssumeRole: not specified',bad:true},
+   {c:'MFA condition on AssumeRole: not required',bad:true},
+   {c:'Session duration: 12 hours (the maximum allowed)',bad:true},
+   {c:'Permissions attached: ReadOnlyAccess (AWS managed policy)'},
+  ],
+  e:'Four defects. A wildcard account principal lets any AWS account in existence attempt to assume the role, not just the intended partner account; with no external ID condition there is nothing to stop the classic confused-deputy assumption from a third party who learned the role ARN; no MFA requirement means a leaked credential alone is enough; and a 12-hour session for a read-only cross-account role is far longer than the access pattern needs. The attached permission set itself — read-only — is appropriately scoped.'},
+ {id:'pbq18',d:'grc',o:'1.2',type:'build',
+  ctx:{fn:'bia.txt',kd:'Business Impact Analysis workflow',lines:['New critical order-processing system going live next quarter.']},
+  q:'Order the Business Impact Analysis steps from first activity to final output.',
+  items:['Identify and inventory business processes and their supporting systems','Determine the impact of an outage on each process as time passes',
+   'Assign RTO and RPO to each process based on that impact','Identify the minimum resources required to resume each process within its MTD',
+   'Prioritise recovery order across processes based on criticality','Feed the results into the disaster recovery and continuity plans'],
+  e:'You cannot assess impact on a process you have not first inventoried, and RTO/RPO targets only mean something once the impact-over-time curve is understood. Minimum-resource identification and cross-process prioritisation are what make the targets actionable rather than aspirational, and the whole analysis exists to feed the DR/continuity plans — it is an input to them, not a parallel document.'},
+ {id:'pbq19',d:'grc',o:'1.3',type:'build',
+  ctx:{fn:'gap-assessment.txt',kd:'compliance gap assessment — new regulatory requirement',lines:['New regulation requires incident reporting within 24 hours of detection.']},
+  q:'Order the gap assessment process from receiving the new requirement to a tracked remediation plan.',
+  items:['Map the new requirement to existing controls and processes','Identify where current capability falls short of the requirement',
+   'Document each gap with an owner and a target remediation date','Prioritise gaps by regulatory deadline and risk exposure',
+   'Track remediation to closure and re-test the affected control','Attest or report compliance status to the relevant authority'],
+  e:'Mapping the requirement to what already exists is what actually reveals the gaps — skipping straight to remediation risks fixing things that were already compliant. Every gap needs an owner and date before it can be prioritised meaningfully, and closure has to be re-tested, not just marked done, before any attestation is made — attesting to a control that was never re-verified is the finding auditors look for first.'},
+ {id:'pbq20',d:'grc',o:'1.1',type:'defect',q:'Review this control-exception approval record. Flag every defect.',
+  art:{fn:'exception-record.txt',kd:'control exception review'},
+  lines:[
+   {c:'Exception requested: disable MFA for a legacy scheduling system'},
+   {c:'Business justification recorded: yes'},
+   {c:'Compensating control specified: none',bad:true},
+   {c:'Expiration date: none set — approved indefinitely',bad:true},
+   {c:'Approved by: the requesting team lead only, no independent security sign-off',bad:true},
+   {c:'Exception logged in the risk/exception register: yes'},
+  ],
+  e:'Three defects. An exception with no compensating control just accepts the risk with nothing offsetting it; approving indefinitely turns a one-time exception into a permanent, un-reviewed gap; and letting the requester approve their own exception removes the independent check that exception processes exist for. Recording the justification and logging the exception in the register are both correct — the failure is in what was approved and by whom, not in whether it was tracked at all.'},
+ {id:'pbq21',d:'grc',o:'1.4',type:'defect',q:'Review this PASTA-based threat model write-up. Flag every defect.',
+  art:{fn:'pasta-model.txt',kd:'PASTA seven-stage review'},
+  lines:[
+   {c:'Stage 1 — Define objectives: business objectives captured'},
+   {c:'Stage 2 — Define technical scope: application and infrastructure scope captured'},
+   {c:'Stage 3 — Application decomposition: data flow diagram produced'},
+   {c:'Stage 4 — Threat analysis: threat intelligence feeds not consulted',bad:true},
+   {c:'Stage 5 — Vulnerability and weakness analysis: skipped, went straight to attack modeling',bad:true},
+   {c:'Stage 6 — Attack modeling: attack trees built from assumed rather than confirmed vulnerabilities',bad:true},
+   {c:'Stage 7 — Risk and impact analysis: impact tied back to the Stage 1 business objectives'},
+  ],
+  e:'Three defects, and they cascade. PASTA is risk-centric specifically because Stage 4 pulls in real threat intelligence rather than working from a generic checklist — skipping it removes the thing that makes PASTA different from a paper exercise. Skipping Stage 5 means Stage 6 has nothing confirmed to build attack trees from, so it modeled attacks against vulnerabilities that were never actually verified to exist. Stages 1–3 and 7 are done correctly, and the final risk analysis is only as good as the attack modeling feeding it.'},
+ {id:'pbq22',d:'ops',o:'4.3',type:'build',
+  ctx:{fn:'hunt-runbook.txt',kd:'structured hunt — credential-dumping technique',lines:['Hypothesis: an adversary is dumping LSASS memory to harvest credentials.']},
+  q:'Order this hunt from hypothesis to a documented, reusable outcome.',
+  items:['Map the hypothesis to the specific ATT&CK technique and its known procedure variants','Identify the data sources that would actually show this technique (EDR process/memory-access events)',
+   'Query across the full fleet and a dwell-time-appropriate window, not a single host','Baseline legitimate LSASS access (EDR/AV agents, backup tools) to separate signal from noise',
+   'Validate any hit against additional context before escalating it to an incident','Convert a confirmed, repeatable query into a standing detection rule'],
+  e:'Mapping to a specific technique focuses what would otherwise be an unbounded search. A single host or a short window misses lateral spread and the dwell time real intrusions run on, and without a baseline, every legitimate tool that touches LSASS becomes a false positive. Validating before escalating keeps an uncorroborated hit from becoming an incident prematurely, and converting the working query into a standing detection is exactly what moves a hunt program from ad hoc toward the automated end of the Hunting Maturity Model.'},
+ {id:'pbq23',d:'ops',o:'4.1',type:'build',
+  ctx:{fn:'detection-lifecycle.txt',kd:'new detection rule — idea to production',lines:['Proposed: detect anomalous service-account authentication outside business hours.']},
+  q:'Order the detection engineering lifecycle from idea to a live paging alert.',
+  items:['Define the specific behavior and the log source(s) that would show it','Write the detection logic and test it against historical data to confirm it fires on true positives',
+   'Tune thresholds against a baseline period to estimate the false-positive rate','Peer review the logic and its expected alert volume before enabling it',
+   'Deploy in monitoring-only/silent mode before it can page anyone','Promote to a paging alert once the false-positive rate is acceptable'],
+  e:'Logic has to be validated against real historical data before anyone tunes it, and tuning needs a baseline before peer review can judge whether the expected volume is reasonable. Silent deployment is the step teams skip — it is what actually proves the false-positive rate in production before the rule earns the right to page someone, rather than finding out the hard way at 3am.'},
+ {id:'pbq24',d:'eng',o:'3.1',type:'defect',q:'Review this Active Directory service account and delegation configuration. Flag every defect.',
+  art:{fn:'ad-delegation.txt',kd:'Kerberos delegation review — svc-webapp'},
+  lines:[
+   {c:'Service account: svc-webapp'},
+   {c:'msDS-AllowedToDelegateTo: * (any service principal name)',bad:true},
+   {c:'TRUSTED_FOR_DELEGATION flag: set, and this account also holds Domain Admin rights',bad:true},
+   {c:'Kerberos pre-authentication: required'},
+   {c:'Password policy: set to never expire, last rotated three years ago',bad:true},
+   {c:'SPN registered: HTTP/webapp.corp.local'},
+  ],
+  e:'Three defects. Unconstrained delegation to any SPN means anything that can trick this account into authenticating can then impersonate the requesting user to whatever service it chooses — constraining the delegation target is the actual control. Combining that with Domain Admin rights on the same account turns a compromised web service into a domain-wide escalation path, which is a well-known real-world attack chain. And a password that has never rotated in three years has had three years for any leak to remain useful. Requiring Kerberos pre-authentication is correct and unrelated to these issues.'},
+ {id:'pbq25',d:'eng',o:'3.4',type:'defect',q:'Review this HSM key-management policy for a payment-signing key. Flag every defect.',
+  art:{fn:'hsm-key-policy.txt',kd:'HSM key policy review'},
+  lines:[
+   {c:'Key: payment-signing-key, generated inside the HSM, non-exportable in plaintext'},
+   {c:'Backup method: wrapped export under a separate backup-HSM key, plaintext never leaves the HSM boundary'},
+   {c:'Access control: any application in the payments VPC may request signing operations',bad:true},
+   {c:'Key-usage logging: enabled, every signing operation logged'},
+   {c:'Rotation policy: none defined — key has never been rotated since creation',bad:true},
+   {c:'Dual control on key rotation or destruction: not required — a single administrator can act alone',bad:true},
+  ],
+  e:'Three defects. Scoping signing access to an entire VPC rather than a specific service identity means any compromised workload in that network segment can sign payment data, not just the one service that should. No rotation policy leaves a single key material in use indefinitely, with no bound on how long a future compromise stays useful. And allowing one administrator to rotate or destroy the key alone removes the dual-control expectation for an action with no undo. Non-exportable generation, wrapped backup, and full usage logging are all correctly implemented.'}
+);
+
 /* ---- obj 3.5 gap-closure: named specialized-device categories ---- */
 QUESTIONS.push(
  {id:'sd1',d:'eng',o:'3.5',type:'mcq',q:'Why is a stolen RFID access badge fundamentally different from a stolen password to defend against?',
@@ -9888,8 +10110,9 @@ function eIdle(){
     prac.style.display=real?'none':'flex';
     note.innerHTML=real
       ? 'Matches published CAS-005 conditions: <b>90 questions in 165 minutes</b>, domain-weighted, '
-        +'mixed multiple-choice and performance-based. You will get a <b>pass/fail verdict first</b> \u2014 '
-        +'the real exam releases no score \u2014 with the numeric breakdown underneath.'
+        +'mixed multiple-choice and performance-based, with PBQs <b>clustered in the first third</b> \u2014 '
+        +'reported real sittings front-load them, so a slow start is not a preview of the rest. You will get a '
+        +'<b>pass/fail verdict first</b> \u2014 the real exam releases no score \u2014 with the numeric breakdown underneath.'
       : 'Shorter sets for targeted practice. Pacing is scaled to ~1.8 min per question.';
   }
   mode.onchange=syncMode; syncMode();
@@ -9913,6 +10136,12 @@ function eStart(){
       const mcqIdx=ex.qs.map((q,i)=>q.type==='mcq'?i:-1).filter(i=>i>=0).sort(()=>Math.random()-.5);
       for(let k=0;k<want-have.length&&k<spare.length&&k<mcqIdx.length;k++) ex.qs[mcqIdx[k]]=spare[k];
     }
+    /* Reported real sittings cluster PBQs in roughly the first third of the exam. */
+    const pbqs=ex.qs.filter(q=>q.type!=='mcq');
+    const mcqs=ex.qs.filter(q=>q.type==='mcq').sort(()=>Math.random()-.5);
+    const zoneLen=Math.max(pbqs.length,Math.min(ex.qs.length,Math.ceil(ex.qs.length/3)));
+    const front=[...pbqs,...mcqs.splice(0,Math.max(0,zoneLen-pbqs.length))].sort(()=>Math.random()-.5);
+    ex.qs=[...front,...mcqs];
   }
   ex.ans=ex.qs.map(q=>blankAns(q));
   ex.flag=new Array(ex.qs.length).fill(false);
@@ -10070,7 +10299,9 @@ function renderEHist(){
 /* ===================== CRAM ===================== */
 function renderCram(){
   const b=document.getElementById('cram');
-  let h='<h4>Formulas &amp; hard rules</h4>';
+  let h='<h4>Exam day — what CAS-005 is actually like</h4>';
+  CRAM.examDay.forEach(t=>h+='<div class="sq">• '+esc(t)+'</div>');
+  h+='<h4>Formulas &amp; hard rules</h4>';
   CRAM.formulas.forEach(x=>h+='<div class="kv"><b>'+esc(x[0])+'</b><span>'+esc(x[1])+'</span></div>');
   h+='<h4>Sequences to know cold</h4>';
   CRAM.sequences.forEach(x=>h+='<div class="sq"><b>'+esc(x[0])+':</b> '+esc(x[1])+'</div>');
